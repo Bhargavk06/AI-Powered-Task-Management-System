@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import AdminDashboard from './AdminDashboard';
 import HomeSection from './HomeSection';
 import ManagerSection from './ManagerSection';
@@ -10,7 +11,14 @@ import { NotificationProvider } from '../NotificationProvider'; // ✅ make sure
 
 function AdminTodo() {
   const [selectedSection, setSelectedSection] = useState('');
+  const location = useLocation();
   const userId = localStorage.getItem('userId'); // ✅ needed for NotificationProvider
+
+  useEffect(() => {
+    if (location.state?.section) {
+      setSelectedSection(location.state.section);
+    }
+  }, [location.state]);
 
   return (
     <NotificationProvider userId={userId}> {/* ✅ wrap entire dashboard */}

@@ -27,12 +27,15 @@ function EmployeeTodo() {
     }
   }, [userId]);
 
-  const handleStatusChange = async (taskId, newStatus) => {
+    const handleStatusChange = async (taskId, newStatus) => {
     try {
       await axios.put('http://localhost:8080/assigntask/updateStatus', {
         taskId: taskId,
         status: newStatus
       });
+      setTask(prev =>
+        prev.map(t => t.taskId === taskId ? { ...t, status: newStatus } : t)
+      );
       alert("Status updated!");
     } catch (error) {
       console.error("Failed to update status", error);

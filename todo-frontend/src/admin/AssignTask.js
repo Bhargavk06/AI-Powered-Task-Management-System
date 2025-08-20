@@ -1,11 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import TaskComments from '../TaskComments';
+import AdminDashboard from './AdminDashboard';
 function AssignTask() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [unreadMap, setUnreadMap] = useState({});
   const [showForm, setShowForm] = useState(false);
   const [taskName, setTaskName] = useState(''); 
@@ -18,7 +19,7 @@ function AssignTask() {
   const [isEditing, setIsEditing] = useState(false);
   const [editTaskId, setEditTaskId] = useState(null);
 
-  // 🔍 Filter states
+  // Filter states
   const [searchText, setSearchText] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -28,27 +29,29 @@ function AssignTask() {
   const userId = localStorage.getItem('userId');
 
   useEffect(() => {
-    axios.get(`http://localhost:8080/assigntask/gettask/${id}`)
-      .then((response) => setTasks(response.data))
-      .catch((error) => console.error("Fetching Error: ", error));
-       axios.get(`http://localhost:8080/comments/unread-map/${userId}`)
-        .then((res) => setUnreadMap(res.data))
-        .catch((err) => console.log("Error loading unread map", err));
-  }, [id]);
+  axios
+    .get(`http://localhost:8080/assigntask/gettask/${id}`)
+    .then((response) => setTasks(response.data))
+    .catch((error) => console.error("Fetching Error: ", error));
+  axios
+    .get(`http://localhost:8080/comments/unread-map/${userId}`)
+    .then((res) => setUnreadMap(res.data))
+    .catch((err) => console.log("Error loading unread map", err));
+}, [id, tasks]); // Add tasks to dependency array
 
-  const handleAssign = (e) => {
-    e.preventDefault();
-    const newTask = { taskname: taskName, description, status, deadline };
+const handleAssign = async (e) => {
+  e.preventDefault();
+  const newTask = { taskname: taskName, description, status, deadline };
 
-    axios.post(`http://localhost:8080/assigntask/assign/${id}?assignerId=${userId}`, newTask)
-      .then(() => axios.get(`http://localhost:8080/assigntask/gettask/${id}`))
-      .then((response) => {
-        setTasks(response.data);
-        resetForm();
-       
-      })
-      .catch((error) => console.error("Error assigning task:", error));
-  };
+  try {
+    await axios.post(`http://localhost:8080/assigntask/assign/${id}?assignerId=${userId}`, newTask);
+    const response = await axios.get(`http://localhost:8080/assigntask/gettask/${id}`);
+    setTasks(response.data); // Update tasks state with fresh data
+    resetForm();
+  } catch (error) {
+    console.error("Error assigning task:", error);
+  }
+};
 
   const handleUpdate = (e) => {
     e.preventDefault();
@@ -57,10 +60,24 @@ function AssignTask() {
     axios.put(`http://localhost:8080/assigntask/updateTask`, updatedTask)
       .then(() => axios.get(`http://localhost:8080/assigntask/gettask/${id}`))
       .then((response) => {
+        console.log("Fetched after assignment1:", response.data);
         setTasks(response.data);
         resetForm();
       })
       .catch((error) => console.error("Error updating task:", error));
+  };
+
+  const handleBack = () => {
+    const fromState = location.state?.from;
+    if (fromState?.path === '/admintodo' && fromState?.section) {
+      navigate('/admintodo', { state: { section: fromState.section }, replace: true });
+      return;
+    }
+    if (fromState && typeof fromState === 'string') {
+      navigate(fromState, { replace: true });
+      return;
+    }
+    navigate('/employeesection', { replace: true });
   };
 
   const deleteTask = (taskId) => {
@@ -144,7 +161,7 @@ function AssignTask() {
   return (
     <div style={{ padding: '30px', textAlign: 'center' }}>
       <h2>Employee   #{id} Task List</h2>
-      <button onClick={() => navigate(-1)} style={styles.backBtn}>← Back</button>
+      <button onClick={handleBack} style={styles.backBtn}>← Back</button>
 
       <button onClick={() => setShowForm(!showForm)} style={styles.addTaskBtn}>
         {showForm ? 'Close Form' : (isEditing ? 'Edit Task' : 'Add Task')}
@@ -211,48 +228,54 @@ function AssignTask() {
       )}
 
       {/* 🔍 Filters */}
-      <div style={{ marginBottom: '20px' }}>
-        <input
-          type="text"
-          placeholder="Search by Task Name"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          style={{ marginRight: '10px' }}
-        />
-        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{ marginRight: '10px' }}>
-          <option value="">All Statuses</option>
-          <option value="To Do">To Do</option>
-          <option value="In Progress">In Progress</option>
-          <option value="Done">Done</option>
-        </select>
-        <label>From:</label>
-        <input
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          style={{ marginRight: '10px', marginLeft: '5px' }}
-        />
-        <label>To:</label>
-        <input
-          type="date"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-        />
-      </div>
-      {selectedTask && (
-  <div style={styles.modalOverlay}>
-    <div style={styles.modalBox}>
-      <h3>Comments for: {selectedTask.taskname}</h3>
-      <TaskComments taskId={selectedTask.taskId} userId={userId} />
-      <button 
-        onClick={() => setSelectedTask(null)} 
-        style={{ marginTop: '15px', ...styles.deleteBtn }}
-      >
-        Close
-      </button>
-    </div>
+      <div style={styles.filterContainer}>
+  <div style={styles.filterItem}>
+    <span style={styles.filterLabel}>🔍</span>
+    <input
+      type="text"
+      placeholder="Search Task"
+      value={searchText}
+      onChange={(e) => setSearchText(e.target.value)}
+      style={styles.filterInput}
+    />
   </div>
-)}
+
+  <div style={styles.filterItem}>
+    <span style={styles.filterLabel}>📋</span>
+    <select
+      value={filterStatus}
+      onChange={(e) => setFilterStatus(e.target.value)}
+      style={styles.filterSelect}
+    >
+      <option value="">All Statuses</option>
+      <option value="To Do">To Do</option>
+      <option value="In Progress">In Progress</option>
+      <option value="Done">Done</option>
+    </select>
+  </div>
+
+  <div style={styles.filterItem}>
+    <span style={styles.filterLabel}>🗓️ From</span>
+    <input
+      type="date"
+      value={startDate}
+      onChange={(e) => setStartDate(e.target.value)}
+      style={styles.filterInput}
+    />
+  </div>
+
+  <div style={styles.filterItem}>
+    <span style={styles.filterLabel}>🗓️ To</span>
+    <input
+      type="date"
+      value={endDate}
+      onChange={(e) => setEndDate(e.target.value)}
+      style={styles.filterInput}
+    />
+  </div>
+</div>
+
+
 
 
       {/* Task List */}
@@ -460,7 +483,57 @@ function AssignTask() {
     cursor: 'pointer',
     fontWeight: '500',
     marginLeft: '10px',
-  }
+  },
+  filterContainer: {
+  display: 'flex',
+  flexWrap: 'wrap',
+  justifyContent: 'center',
+  gap: '20px',
+  padding: '20px',
+  marginBottom: '30px',
+  borderRadius: '16px',
+  background: 'rgba(255, 255, 255, 0.25)',
+  backdropFilter: 'blur(8px)',
+  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.1)',
+  border: '1px solid rgba(255, 255, 255, 0.18)',
+},
+
+filterItem: {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  minWidth: '160px',
+},
+
+filterLabel: {
+  fontSize: '13px',
+  marginBottom: '6px',
+  fontWeight: '500',
+  color: '#333',
+},
+
+filterInput: {
+  padding: '10px 12px',
+  width: '100%',
+  borderRadius: '8px',
+  border: '1px solid #ccc',
+  fontSize: '14px',
+  backgroundColor: '#fff',
+  transition: 'border-color 0.3s',
+  boxSizing: 'border-box',
+},
+
+filterSelect: {
+  padding: '10px 12px',
+  width: '100%',
+  borderRadius: '8px',
+  border: '1px solid #ccc',
+  fontSize: '14px',
+  backgroundColor: '#fff',
+  transition: 'border-color 0.3s',
+  boxSizing: 'border-box',
+}
+
   }
 
 export default AssignTask;

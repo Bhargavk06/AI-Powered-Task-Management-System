@@ -27,7 +27,9 @@ function ManagerSection() {
   );
 
   const handleClick = (managerId) => {
-    navigate(`/assignTask/${managerId}`);
+    navigate(`/assignTask/${managerId}`, {
+      state: { from: { path: '/admintodo', section: 'Managers' } }
+    });
   };
 
   const handleDelete = (e, managerId) => {

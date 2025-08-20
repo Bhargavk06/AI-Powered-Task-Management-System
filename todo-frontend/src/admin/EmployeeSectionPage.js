@@ -1,9 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminDashboard from './AdminDashboard';
-import AssignTask from './AssignTask';
+import EmployeeSection from './EmployeeSection';
 
-export default function AssignTaskPage() {
+export default function EmployeeSectionPage() {
   const navigate = useNavigate();
 
   const handleSelect = (section) => {
@@ -13,14 +13,13 @@ export default function AssignTaskPage() {
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
       <AdminDashboard setSelectedSection={handleSelect} />
-
       <div style={{
         flex: 1,
         overflowY: 'auto',
         padding: '20px',
         background: '#f4f4f4',
       }}>
-        <AssignTask />
+        <EmployeeSection />
       </div>
     </div>
   );

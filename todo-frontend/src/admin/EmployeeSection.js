@@ -27,7 +27,9 @@ function EmployeeSection() {
   );
 
   const handleClick = (employeeId) => {
-    navigate(`/assignTask/${employeeId}`);
+    navigate(`/assignTask/${employeeId}`, {
+      state: { from: { path: '/admintodo', section: 'Employees' } }
+    });
   };
 
   const handleDelete = (e, employeeId) => {
