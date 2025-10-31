@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import AdminDashboard from './AdminDashboard';
+//import AdminDashboard from './AdminDashboard';
 import EmployeeSection from './EmployeeSection';
 
 export default function EmployeeSectionPage() {
@@ -12,7 +12,7 @@ export default function EmployeeSectionPage() {
 
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
-      <AdminDashboard setSelectedSection={handleSelect} />
+      
       <div style={{
         flex: 1,
         overflowY: 'auto',

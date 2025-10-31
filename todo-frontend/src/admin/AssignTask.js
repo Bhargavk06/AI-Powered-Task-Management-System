@@ -2,22 +2,50 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import TaskComments from '../TaskComments';
-import AdminDashboard from './AdminDashboard';
+import TaskCard from '../TaskCard';
+import Icon from '../components/AppIcon';
+
+
+// Helper functions (keep these)
+const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
+
 function AssignTask() {
   const { id } = useParams();
+  const userId = localStorage.getItem('userId');
   const navigate = useNavigate();
   const location = useLocation();
   const [unreadMap, setUnreadMap] = useState({});
   const [showForm, setShowForm] = useState(false);
-  const [taskName, setTaskName] = useState(''); 
+  const [taskName, setTaskName] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState('To Do');
   const [deadline, setDeadline] = useState('');
   const [tasks, setTasks] = useState([]);
+  const [task,setTask] = useState([]);
   const [expandedTaskId, setExpandedTaskId] = useState(null);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editTaskId, setEditTaskId] = useState(null);
+
+  //Added featured
+  const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState('list'); // 'list', 'kanban', 'calendar'
+  const totalTasks = tasks.length;
+  const inProgressTasks = tasks.filter(t => t.status === 'In Progress').length;
+  const completedTasks = tasks.filter(t => t.status === 'Done').length;
+  const overdueTasks = tasks.filter(t => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const taskDate = new Date(t.deadline);
+      taskDate.setHours(0, 0, 0, 0);
+      return taskDate < today && t.status !== 'Done';
+  }).length;
+
+    // State for Calendar
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+
 
   // Filter states
   const [searchText, setSearchText] = useState('');
@@ -25,61 +53,79 @@ function AssignTask() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
+
   const [selectedTask, setSelectedTask] = useState(null); //  Track selected task for viewing comments
-  const userId = localStorage.getItem('userId');
+
 
   useEffect(() => {
-  axios
-    .get(`http://localhost:8080/assigntask/gettask/${id}`)
-    .then((response) => setTasks(response.data))
-    .catch((error) => console.error("Fetching Error: ", error));
-  axios
-    .get(`http://localhost:8080/comments/unread-map/${userId}`)
-    .then((res) => setUnreadMap(res.data))
-    .catch((err) => console.log("Error loading unread map", err));
-}, [id, tasks]); // Add tasks to dependency array
+    const fetchTasks = () => {
+      axios
+        .get(`http://localhost:8080/assigntask/gettask/${id}`)
+        .then((response) => setTasks(response.data))
+        .catch((error) => console.error("Fetching Error: ", error));
+    };
 
-const handleAssign = async (e) => {
-  e.preventDefault();
-  const newTask = { taskname: taskName, description, status, deadline };
+    const fetchUnreadMap = () => {
+      axios
+        .get(`http://localhost:8080/comments/unread-map/${userId}`)
+        .then((res) => setUnreadMap(res.data))
+        .catch((err) => console.log("Error loading unread map", err));
+    };
 
-  try {
-    await axios.post(`http://localhost:8080/assigntask/assign/${id}?assignerId=${userId}`, newTask);
-    const response = await axios.get(`http://localhost:8080/assigntask/gettask/${id}`);
-    setTasks(response.data); // Update tasks state with fresh data
-    resetForm();
-  } catch (error) {
-    console.error("Error assigning task:", error);
-  }
-};
+    fetchTasks();
+    fetchUnreadMap();
+  }, [id, userId]); // Depend on userId as well for fetching the unread map
+
+  const handleLogout = () => {
+    navigate('/UserLogin');
+  };
+
+  const handleAssign = async (e) => {
+    e.preventDefault();
+    const newTask = { taskname: taskName, description, status, deadline };
+    try {
+      await axios.post(`http://localhost:8080/assigntask/assign/${id}?assignerId=${userId}`, newTask);
+      // Re-fetch tasks to get the latest list
+      const response = await axios.get(`http://localhost:8080/assigntask/gettask/${id}`);
+      setTasks(response.data);
+      resetForm();
+    } catch (error) {
+      console.error("Error assigning task:", error);
+    }
+  };
 
   const handleUpdate = (e) => {
     e.preventDefault();
     const updatedTask = { taskId: editTaskId, taskname: taskName, description, status, deadline };
-
     axios.put(`http://localhost:8080/assigntask/updateTask`, updatedTask)
       .then(() => axios.get(`http://localhost:8080/assigntask/gettask/${id}`))
       .then((response) => {
-        console.log("Fetched after assignment1:", response.data);
         setTasks(response.data);
         resetForm();
       })
       .catch((error) => console.error("Error updating task:", error));
   };
 
-  const handleBack = () => {
-    const fromState = location.state?.from;
-    if (fromState?.path === '/admintodo' && fromState?.section) {
-      navigate('/admintodo', { state: { section: fromState.section }, replace: true });
-      return;
+    const handleStatusChange = async (taskId, newStatus) => {
+    try {
+      await axios.put('http://localhost:8080/assigntask/updateStatus', {
+        taskId: taskId,
+        status: newStatus
+      });
+      setTasks(prev =>
+        prev.map(t => t.taskId === taskId ? { ...t, status: newStatus } : t)
+      );
+      // alert("Status updated!");
+    } catch (error) {
+      console.error("Failed to update status", error);
     }
-    if (fromState && typeof fromState === 'string') {
-      navigate(fromState, { replace: true });
-      return;
-    }
-    navigate('/employeesection', { replace: true });
   };
 
+
+ const handleBack = () => {
+    navigate(-1);
+  };
+  
   const deleteTask = (taskId) => {
     if (window.confirm("Are you sure you want to delete this task?")) {
       axios.delete(`http://localhost:8080/assigntask/deleteTask/${taskId}`)
@@ -115,7 +161,7 @@ const handleAssign = async (e) => {
     setExpandedTaskId(expandedTaskId === taskId ? null : taskId);
   };
 
-   const openCommentsModal = async (t) => {
+  const openCommentsModal = async (t) => {
     try {
       await axios.get(`http://localhost:8080/comments/view/${t.taskId}/${userId}`);
       setUnreadMap((prev) => ({ ...prev, [t.taskId]: false }));
@@ -148,15 +194,127 @@ const handleAssign = async (e) => {
   };
 
 
-  // 🔍 Filter Logic
+  //  Filter Logic
+  //  Filter Logic
   const filteredTasks = tasks.filter(task => {
-    const matchesName = task.taskname.toLowerCase().includes(searchText.toLowerCase());
+    // Add a check for task.taskname being null or undefined
+    const taskNameLower = task.taskname ? task.taskname.toLowerCase() : '';
+    const searchTextLower = searchText.toLowerCase();
+
+    const matchesName = taskNameLower.includes(searchTextLower);
     const matchesStatus = filterStatus ? task.status === filterStatus : true;
     const matchesStartDate = startDate ? new Date(task.deadline) >= new Date(startDate) : true;
     const matchesEndDate = endDate ? new Date(task.deadline) <= new Date(endDate) : true;
 
+    if (searchTerm &&
+        !(task.taskname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          task.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          task.assignedTo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          task.priority?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          task.status?.toLowerCase().includes(searchTerm.toLowerCase()))) {
+      return false;
+    }
+
+
     return matchesName && matchesStatus && matchesStartDate && matchesEndDate;
   });
+
+  // Group tasks for Kanban view
+  const tasksByStatus = filteredTasks.reduce((acc, t) => {
+    const status = t.status || 'No Status';
+    if (!acc[status]) {
+      acc[status] = [];
+    }
+    acc[status].push(t);
+    return acc;
+  }, {});
+
+  const statusColumns = ['To Do', 'In Progress', 'Done'];
+
+  // --- Calendar Logic ---
+  const getPriorityDotColor = (priority) => {
+    switch (priority?.toLowerCase()) {
+      case 'high': return 'red';
+      case 'medium': return 'orange';
+      case 'low': return 'green';
+      default: return 'gray';
+    }
+  };
+
+  const tasksByDate = filteredTasks.reduce((acc, t) => {
+    const date = new Date(t.deadline).toLocaleDateString('en-CA');
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(t);
+    return acc;
+  }, {});
+
+  const handleMonthChange = (direction) => {
+    if (direction === 'prev') {
+      setCurrentMonth(prev => (prev === 0 ? 11 : prev - 1));
+      if (currentMonth === 0) setCurrentYear(prev => prev - 1);
+    } else {
+      setCurrentMonth(prev => (prev === 11 ? 0 : prev + 1));
+      if (currentMonth === 11) setCurrentYear(prev => prev + 1);
+    }
+  };
+
+  const renderCalendarDays = () => {
+    const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+    const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
+
+    const actualFirstDayOffset = firstDay;
+
+    const blanks = Array.from({ length: actualFirstDayOffset }, (_, i) => (
+      <div key={`blank-${i}`} className="min-h-[100px]"></div> // Tailwind for min-height
+    ));
+
+    const days = Array.from({ length: daysInMonth }, (_, i) => {
+      const day = i + 1;
+      const dateObj = new Date(currentYear, currentMonth, day);
+      const dateStr = dateObj.toLocaleDateString('en-CA');
+      const dayTasks = tasksByDate[dateStr] || [];
+      const isToday = new Date().toLocaleDateString('en-CA') === dateStr;
+
+      return (
+        <div
+          key={`day-${day}`}
+          className="min-h-[100px] p-2 text-sm relative border border-gray-200 dark:border-gray-700 flex flex-col items-start overflow-hidden bg-white dark:bg-gray-800"
+        >
+          <span className={`font-bold relative z-10 ${isToday ? 'bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center float-right text-xs' : 'text-gray-700 dark:text-gray-50'}`}>
+            {day}
+          </span>
+          <div className="mt-1 w-full max-h-[calc(100%-30px)] overflow-y-auto">
+            {dayTasks.map(t => (
+              <div
+                key={t.taskId}
+                className="flex items-center rounded-sm px-1 py-1 mb-1 cursor-pointer text-xs whitespace-nowrap overflow-hidden text-ellipsis w-[calc(100%-2px)]"
+                style={{
+                  backgroundColor: getPriorityDotColor(t.priority) === 'red' ? '#ffe8e6' : getPriorityDotColor(t.priority) === 'orange' ? '#fff1e6' : '#e6ffe6',
+                  color: getPriorityDotColor(t.priority) === 'red' ? '#cf1322' : getPriorityDotColor(t.priority) === 'orange' ? '#d46b08' : '#237804',
+                }}
+                onClick={() => setSelectedTask(t)}
+              >
+                <span
+                  className="w-2 h-2 rounded-full mr-1 flex-shrink-0"
+                  style={{ backgroundColor: getPriorityDotColor(t.priority) }}
+                  title={t.priority}
+                ></span>
+                {t.taskname}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    });
+
+    return [...blanks, ...days];
+  };
+
+  const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
 
   return (
     <div style={{ padding: '30px', textAlign: 'center' }}>
@@ -227,200 +385,327 @@ const handleAssign = async (e) => {
 
       )}
 
-      {/* 🔍 Filters */}
-      <div style={styles.filterContainer}>
-  <div style={styles.filterItem}>
-    <span style={styles.filterLabel}>🔍</span>
-    <input
-      type="text"
-      placeholder="Search Task"
-      value={searchText}
-      onChange={(e) => setSearchText(e.target.value)}
-      style={styles.filterInput}
-    />
-  </div>
+      {/* Filters */}
+      <div className="flex flex-wrap justify-center items-center gap-4 p-4 mb-6 bg-gray-50 dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+        {/* Search Input */}
+        <div className="relative flex-grow min-w-[200px]">
+          <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+            <Icon name="Search" size={16} className="text-gray-400" />
+          </span>
+          <input
+            type="text"
+            placeholder="Search Task..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border rounded-lg bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 transition"
+          />
+        </div>
 
-  <div style={styles.filterItem}>
-    <span style={styles.filterLabel}>📋</span>
-    <select
-      value={filterStatus}
-      onChange={(e) => setFilterStatus(e.target.value)}
-      style={styles.filterSelect}
-    >
-      <option value="">All Statuses</option>
-      <option value="To Do">To Do</option>
-      <option value="In Progress">In Progress</option>
-      <option value="Done">Done</option>
-    </select>
-  </div>
+        {/* Status Select */}
+        <div className="relative flex-grow min-w-[180px]">
+          <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <Icon name="ListChecks" size={16} className="text-gray-400" />
+          </span>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border rounded-lg appearance-none bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 transition"
+          >
+            <option value="">All Statuses</option>
+            <option value="To Do">To Do</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Done">Done</option>
+          </select>
+        </div>
 
-  <div style={styles.filterItem}>
-    <span style={styles.filterLabel}>🗓️ From</span>
-    <input
-      type="date"
-      value={startDate}
-      onChange={(e) => setStartDate(e.target.value)}
-      style={styles.filterInput}
-    />
-  </div>
+        {/* Start Date Input */}
+        <div className="flex-grow min-w-[180px]">
+            <label htmlFor="start-date" className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">From</label>
+            <div className="relative">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <Icon name="Calendar" size={16} className="text-gray-400" />
+                </span>
+                <input
+                    id="start-date"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border rounded-lg bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 transition"
+                />
+            </div>
+        </div>
 
-  <div style={styles.filterItem}>
-    <span style={styles.filterLabel}>🗓️ To</span>
-    <input
-      type="date"
-      value={endDate}
-      onChange={(e) => setEndDate(e.target.value)}
-      style={styles.filterInput}
-    />
-  </div>
-</div>
+        {/* End Date Input */}
+        <div className="flex-grow min-w-[180px]">
+            <label htmlFor="end-date" className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">To</label>
+            <div className="relative">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <Icon name="Calendar" size={16} className="text-gray-400" />
+                </span>
+                <input
+                    id="end-date"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border rounded-lg bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 transition"
+                />
+            </div>
+        </div>
+        </div>
 
+          <div className="flex flex-wrap justify-between items-center mb-5 gap-4">
+        {/* View Toggle Buttons */}
+        <div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700 shadow-sm">
+          <button
+            className={`px-4 py-2 text-sm cursor-pointer transition-all duration-200 border-r border-gray-300 dark:border-gray-700
+                      ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-transparent text-gray-700 dark:text-gray-50 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            onClick={() => setViewMode('list')}
+          >
+             <Icon name="List" size={16} className="inline-block mr-1" /> List View
+          </button>
+          <button
+            className={`px-4 py-2 text-sm cursor-pointer transition-all duration-200 border-r border-gray-300 dark:border-gray-700
+                      ${viewMode === 'kanban' ? 'bg-blue-600 text-white' : 'bg-transparent text-gray-700 dark:text-gray-50 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            onClick={() => setViewMode('kanban')}
+          >
+             <Icon name="LayoutDashboard" size={16} className="inline-block mr-1" /> Kanban Board
+          </button>
+          <button
+            className={`px-4 py-2 text-sm cursor-pointer transition-all duration-200
+                      ${viewMode === 'calendar' ? 'bg-blue-600 text-white' : 'bg-transparent text-gray-700 dark:text-gray-50 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            onClick={() => setViewMode('calendar')}
+          >
+            <Icon name="Calendar" size={16} className="inline-block mr-1" /> Calendar View
+          </button>
+        </div>
 
-
+        {/* Task Statistics and Search */}
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-300">
+            <span className="flex items-center"><span className="w-2 h-2 rounded-full bg-blue-500 mr-1"></span> Total: {totalTasks}</span>
+            <span className="flex items-center"><span className="w-2 h-2 rounded-full bg-orange-500 mr-1"></span> In Progress: {inProgressTasks}</span>
+            <span className="flex items-center"><span className="w-2 h-2 rounded-full bg-green-500 mr-1"></span> Completed: {completedTasks}</span>
+            <span className="flex items-center"><span className="w-2 h-2 rounded-full bg-red-500 mr-1"></span> Overdue: {overdueTasks}</span>
+          </div>
+          {/* <Button
+            onClick={() => setIsDark(!isDark)}
+            variant="ghost"
+            size="sm"
+            className="ml-2 text-gray-700 dark:text-gray-50 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            <Icon name={isDark ? "Sun" : "Moon"} size={20} />
+          </Button> */}
+          {/* <Button onClick={handleLogout} variant="destructive" size="sm" className="ml-2">
+            <Icon name="LogOut" size={16} className="mr-1" /> Logout
+          </Button> */}
+        </div>
+      </div>
 
       {/* Task List */}
-    
-      <div style={{ marginTop: '30px', maxWidth: '600px', margin: 'auto' , padding:'40px'}}>
-        {filteredTasks.map((task, index) => (
-          <div key={index} style={{
-            border: '1px solid #ccc',
-            borderLeft: `8px solid ${getDeadlineColor(task.deadline)}`,
-            padding: '15px',
-            marginBottom: '15px',
-            borderRadius: '8px',
-            backgroundColor: '#f9f9f9'
-          }}>
-            <h4> 📌 {task.taskname}</h4>
-            <div>
-              <span style={{ marginRight: '10px' }}>{task.status}</span>
-              <button onClick={() => toggleDetails(task.taskId)}>{expandedTaskId === task.taskId ? '▲' : '▼'}</button>
-              <button onClick={() => openCommentsModal(task)} style={styles.viewBtn}>
-              View comments {unreadMap[task.taskId] && <span style={styles.redDot}></span>}
-            </button>
-              <button onClick={() => editTask(task.taskId)} style={styles.editBtn}>Edit</button>
-              <button onClick={() => deleteTask(task.taskId)} style={styles.deleteBtn}>Delete</button>
-            </div>
 
-            {expandedTaskId === task.taskId && (
-              <div style={{ marginTop: '10px' }}>
-                <p><strong>Description:</strong> {task.description}</p>
-                <p><strong>Deadline:</strong> {task.deadline}</p>
-              </div>
+
+       {/* Conditional Rendering based on viewMode */}
+      {viewMode === 'list' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
+            {filteredTasks.length > 0 ? (
+              filteredTasks.map((task) => (
+                <TaskCard
+                  key={task.taskId}
+                  task={task}
+                  openCommentsModal={openCommentsModal}
+                  onEdit={editTask}
+                  onDelete={deleteTask}
+                  unreadComments={unreadMap[task.taskId]}
+                />
+              ))
+            ) : (
+              <p className="text-center text-gray-500 col-span-full">No tasks found.</p>
             )}
-          </div>
-        ))}
-      </div>
-      </div>
+        </div>
+      )}
 
-  )
+      {viewMode === 'kanban' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 mt-4">
+          {statusColumns.map(status => (
+            <div key={status} className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 min-h-[300px] flex flex-col shadow-sm">
+              <h4 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-50 text-center">
+                {status} ({tasksByStatus[status]?.length || 0})
+              </h4>
+              <div className="flex-grow flex flex-col gap-3 min-h-[50px]">
+                {tasksByStatus[status] && tasksByStatus[status].length > 0 ? (
+                  tasksByStatus[status].map(t => (
+                    <TaskCard
+                      key={t.taskId}
+                      task={t}
+                      openCommentsModal={openCommentsModal}
+                      unreadComments={unreadMap[t.taskId]}
+                      onEdit={editTask}
+                      onDelete={deleteTask}
+                    />
+                  ))
+                ) : (
+                  <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-5">No tasks in this column.</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {viewMode === 'calendar' && (
+        <div className="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-md p-5">
+          <div className="flex justify-between items-center mb-5">
+            <button
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-8 h-8 flex items-center justify-center text-lg transition-colors duration-200"
+              onClick={() => handleMonthChange('prev')}
+            >
+              <Icon name="ChevronLeft" size={20} />
+            </button>
+            <span className="text-xl font-bold text-gray-800 dark:text-gray-50">
+              {monthNames[currentMonth]} {currentYear}
+            </span>
+            <button
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-8 h-8 flex items-center justify-center text-lg transition-colors duration-200"
+              onClick={() => handleMonthChange('next')}
+            >
+              <Icon name="ChevronRight" size={20} />
+            </button>
+          </div>
+          <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
+            {weekDays.map(day => (
+              <div key={day} className="bg-gray-100 dark:bg-gray-700 p-2 text-center font-bold text-sm text-gray-600 dark:text-gray-300">
+                {day.substring(0, 3)}
+              </div>
+            ))}
+            {renderCalendarDays()}
+          </div>
+        </div>
+      )}
+
+
+      {/* ... existing JSX ... */}
+
+      {selectedTask && (
+        <TaskComments
+          task={selectedTask}
+          userId={userId}
+          onClose={() => setSelectedTask(null)}
+          onCommentAdded={() => {
+            // Optionally refresh comments or update unread status
+          }}
+        />
+      )}
+    </div> // Closing div for the main component
+  );
 }
-     
-  const styles={
-    
-    modalOverlay: {
-      position: 'fixed',
-      top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 1000
-    },
-    modalBox: {
-      backgroundColor: '#fff',
-      padding: '25px',
-      borderRadius: '10px',
-      width: '600px',
-      maxHeight: '80vh',
-      overflowY: 'auto',
-      boxShadow: '0 0 10px rgba(0,0,0,0.25)'
-    },
-    selectMenu: {
-      backgroundColor: '#1890ff',
-      color: 'white',
-      padding: '8px 12px',
-      fontSize: '14px',
-      border: 'none',
-      borderRadius: '6px',
-      cursor: 'pointer',
-      width: '150px',
-      marginTop: '10px'
-    },
-    redDot: {
-      display: 'inline-block',
-      width: '8px',
-      height: '8px',
-      backgroundColor: 'red',
-      borderRadius: '50%',
-      marginLeft: '6px',
-      verticalAlign: 'middle'
-    },
-    viewBtn: {
-      padding: '8px 16px',
-      marginRight: '10px', 
-      marginLeft: '10px',
-      backgroundColor: '#13c2c2',
-      color: 'white',
-      border: 'none',
-      borderRadius: '6px',
-      cursor: 'pointer',
-      fontWeight: '500',
-      transition: 'background 0.2s',
-    },
-    deleteBtn: {
-      padding: '8px 16px',
-      backgroundColor: '#ff4d4f',
-      color: 'white',
-      border: 'none',
-      borderRadius: '6px',
-      cursor: 'pointer',
-      fontWeight: '500',
-      transition: 'background 0.2s',
-    },
-    editBtn: {
-      padding: '8px 16px',
-      marginRight: '10px',
-      backgroundColor: '#1890ff',
-      color: 'white',
-      border: 'none',
-      borderRadius: '6px',
-      cursor: 'pointer',
-      fontWeight: '500',
-      transition: 'background 0.2s',
-    },
-    backBtn:{
-      padding: '8px 16px',
-      marginRight: '10px',
-      backgroundColor: '#1890ff',
-      color: 'white',
-      border: 'none',
-      borderRadius: '6px',
-      cursor: 'pointer',
-      fontWeight: '500',
-      transition: 'background 0.2s',
-    },
-    addTaskBtn:{
-      padding: '8px 16px',
-      margin:'20px',
-      marginRight: '10px',
-      backgroundColor: '#1890ff',
-      color: 'white',
-      border: 'none',
-      borderRadius: '6px',
-      cursor: 'pointer',
-      fontWeight: '500',
-      transition: 'background 0.2s',
-    },
-    redDot: {
-      display: 'inline-block',
-      width: '8px',
-      height: '8px',
-      backgroundColor: 'red',
-      borderRadius: '50%',
-      marginLeft: '6px',
-      verticalAlign: 'middle'
-    },
-    form: {
+
+
+const styles = {
+
+  modalOverlay: {
+    position: 'fixed',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000
+  },
+  modalBox: {
+    backgroundColor: '#fff',
+    padding: '25px',
+    borderRadius: '10px',
+    width: '600px',
+    maxHeight: '80vh',
+    overflowY: 'auto',
+    boxShadow: '0 0 10px rgba(0,0,0,0.25)'
+  },
+  selectMenu: {
+    backgroundColor: '#1890ff',
+    color: 'white',
+    padding: '8px 12px',
+    fontSize: '14px',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    width: '150px',
+    marginTop: '10px'
+  },
+  redDot: {
+    display: 'inline-block',
+    width: '8px',
+    height: '8px',
+    backgroundColor: 'red',
+    borderRadius: '50%',
+    marginLeft: '6px',
+    verticalAlign: 'middle'
+  },
+  viewBtn: {
+    padding: '8px 16px',
+    marginRight: '10px',
+    marginLeft: '10px',
+    backgroundColor: '#13c2c2',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontWeight: '500',
+    transition: 'background 0.2s',
+  },
+  deleteBtn: {
+    padding: '8px 16px',
+    backgroundColor: '#ff4d4f',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontWeight: '500',
+    transition: 'background 0.2s',
+  },
+  editBtn: {
+    padding: '8px 16px',
+    marginRight: '10px',
+    backgroundColor: '#1890ff',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontWeight: '500',
+    transition: 'background 0.2s',
+  },
+  backBtn: {
+    padding: '8px 16px',
+    marginRight: '10px',
+    backgroundColor: '#1890ff',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontWeight: '500',
+    transition: 'background 0.2s',
+  },
+  addTaskBtn: {
+    padding: '8px 16px',
+    margin: '20px',
+    marginRight: '10px',
+    backgroundColor: '#1890ff',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontWeight: '500',
+    transition: 'background 0.2s',
+  },
+  redDot: {
+    display: 'inline-block',
+    width: '8px',
+    height: '8px',
+    backgroundColor: 'red',
+    borderRadius: '50%',
+    marginLeft: '6px',
+    verticalAlign: 'middle'
+  },
+  form: {
     display: 'inline-block',
     textAlign: 'left',
     padding: '20px',
@@ -483,58 +768,8 @@ const handleAssign = async (e) => {
     cursor: 'pointer',
     fontWeight: '500',
     marginLeft: '10px',
-  },
-  filterContainer: {
-  display: 'flex',
-  flexWrap: 'wrap',
-  justifyContent: 'center',
-  gap: '20px',
-  padding: '20px',
-  marginBottom: '30px',
-  borderRadius: '16px',
-  background: 'rgba(255, 255, 255, 0.25)',
-  backdropFilter: 'blur(8px)',
-  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.1)',
-  border: '1px solid rgba(255, 255, 255, 0.18)',
-},
-
-filterItem: {
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'flex-start',
-  minWidth: '160px',
-},
-
-filterLabel: {
-  fontSize: '13px',
-  marginBottom: '6px',
-  fontWeight: '500',
-  color: '#333',
-},
-
-filterInput: {
-  padding: '10px 12px',
-  width: '100%',
-  borderRadius: '8px',
-  border: '1px solid #ccc',
-  fontSize: '14px',
-  backgroundColor: '#fff',
-  transition: 'border-color 0.3s',
-  boxSizing: 'border-box',
-},
-
-filterSelect: {
-  padding: '10px 12px',
-  width: '100%',
-  borderRadius: '8px',
-  border: '1px solid #ccc',
-  fontSize: '14px',
-  backgroundColor: '#fff',
-  transition: 'border-color 0.3s',
-  boxSizing: 'border-box',
-}
-
   }
+}
 
 export default AssignTask;
 

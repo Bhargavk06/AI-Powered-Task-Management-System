@@ -1,25 +1,38 @@
+// NotificationProvider.js
+
 import { createContext, useEffect, useState, useRef } from 'react';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import axios from 'axios';
+import { useAuth } from './context/AuthContext'; // 1. IMPORT THE AUTH HOOK
 
 export const NotificationContext = createContext();
 
-export const NotificationProvider = ({ userId, children }) => {
+// 2. No longer needs userId as a prop. Just takes `children`.
+export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const notificationsRef = useRef([]);
   
+  // 3. Get the user object from our context.
+  // This `user` object will be `null` if not logged in, or { userId, role, ... } if logged in.
+  const { user } = useAuth();
 
   useEffect(() => {
+    // 4. Get the userId from the context's user object.
+    const userId = user?.userId; // Using optional chaining `?.` is safe if user is null.
+
     if (!userId) {
-      console.log(' No userId provided');
-      return;
+      // This now correctly handles the case where the user is logged out.
+      console.log('No user logged in, notifications are disabled.');
+      return; // Stop here if there's no user.
     }
-    console.log('userId:', userId);
+
+    console.log('User is logged in. Initializing notifications for userId:', userId);
+    
+    // The rest of your code remains exactly the same!
     notificationsRef.current = notifications;
 
-    // Fetch initial notifications
-    const fetchNotifications = async () => {
+    const fetchNotifications = async () => { 
       try {
         const response = await axios.get(`http://localhost:8080/api/notifications/user/${userId}`);
         console.log(' Initial notifications fetched:', response.data);
@@ -31,7 +44,7 @@ export const NotificationProvider = ({ userId, children }) => {
     fetchNotifications();
 
     const socket = new SockJS('http://localhost:8080/ws');
-    const client = new Client({
+        const client = new Client({
       webSocketFactory: () => socket,
       reconnectDelay: 5000,
       onConnect: () => {
@@ -100,7 +113,10 @@ export const NotificationProvider = ({ userId, children }) => {
 
     client.activate();
     return () => client.deactivate();
-  }, [userId]);
+
+  // 5. The effect now depends on the `user` object.
+  // It will automatically re-run when the user logs in or logs out.
+  }, [user]);
 
   return (
     <NotificationContext.Provider value={{ notifications, setNotifications }}>

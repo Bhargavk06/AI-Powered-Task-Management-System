@@ -1,28 +1,25 @@
 import React, { useState} from 'react';
+import { Outlet } from 'react-router-dom';
 import ManagerDashboard from './ManagerDashboard';
-import EmployeeSection from '../admin/EmployeeSection';
-import TaskSummarySection from './ManagerTasks';
+import { NotificationProvider } from '../NotificationProvider';
+import { useAuth } from '../context/AuthContext';
 
 function ManagerTodo() {
-  const [selectedSection, setSelectedSection] = useState('');
+  const { user } = useAuth();
   return (
-    <div style={styles.wrapper}>
-      {/* Left Sidebar */}
-      <div>
-        <ManagerDashboard setSelectedSection={setSelectedSection} />
+   <NotificationProvider userId={user?.userId}>
+      <div style={styles.wrapper}>
+        <div>
+          <ManagerDashboard />
+        </div>
+        <div style={styles.mainContent}>
+          <Outlet />
+        </div>
       </div>
-
-      {/* Right Content */}
-      <div style={styles.mainContent}>
-        {selectedSection === "Home" && ( <h2>Welcome, Manager</h2>) }
-        {selectedSection === "Employees" && <EmployeeSection />}
-        {selectedSection === "Task Summary" && <TaskSummarySection />}
-     
-
-      </div>
-    </div>
+    </NotificationProvider>
   );
 }
+
 
 const styles = {
   wrapper: {
@@ -30,11 +27,10 @@ const styles = {
     height: '100vh',
     fontFamily: 'Arial, sans-serif',
   },
-  sidebar: {
-    width: '250px',
-  },
   mainContent: {
     flex: 1,
+    height: '100vh',
+    overflowY: 'auto',   // Controls scroll bar
     padding: '20px',
     backgroundColor: '#f4f4f4',
   },

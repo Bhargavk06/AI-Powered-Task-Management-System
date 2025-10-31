@@ -1,7 +1,7 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
-function AdminDashboard(props) {
+function AdminDashboard() {
   const navigate = useNavigate();
 
   const styles = {
@@ -36,11 +36,22 @@ function AdminDashboard(props) {
       borderBottom: '1px solid #34495e',
       transition: 'background-color 0.3s',
       cursor: 'pointer',
+      display: 'block', // To make the entire area clickable
     },
-  };
-
-  const handleNavigation = (section) => {
-    props.setSelectedSection && props.setSelectedSection(section);
+    logoutButton: {
+      padding: '15px 20px',
+      color: 'white',
+      textDecoration: 'none',
+      borderBottom: '1px solid #34495e',
+      transition: 'background-color 0.3s',
+      cursor: 'pointer',
+      backgroundColor: 'transparent',
+      border: 'none',
+      textAlign: 'left',
+      width: '100%',
+      fontSize: '16px', // Match link font size
+      fontFamily: 'Arial, sans-serif', // Match link font family
+    }
   };
 
   const handleLogout = () => {
@@ -51,53 +62,18 @@ function AdminDashboard(props) {
     <div style={styles.sidebar}>
       <div style={styles.title}></div>
       <div style={styles.header}>Admin Dashboard</div>
-      <div style={styles.link} onClick={() => handleNavigation('Home')}>Home</div>
-      <div style={styles.link} onClick={() => handleNavigation('Managers')}>Managers</div>
-      <div style={styles.link} onClick={() => handleNavigation('Employees')}>Employees</div>
-      <div style={styles.link} onClick={() => handleNavigation('TaskRecommender')}>TaskRecommender</div>
-      <div style={styles.link} onClick={() => handleNavigation('Task Summary')}>Task Summary</div>
-      <div style={styles.link} onClick={() => handleNavigation('Notifications')}>Notifications</div>
-      <div style={styles.link} onClick={handleLogout}>Logout</div>
+      {/* Use Link for navigation, which is the standard in react-router */}
+      <Link to="/admin" style={styles.link}>Home</Link>
+      <Link to="/admin/managers" style={styles.link}>Managers</Link>
+      <Link to="/admin/employees" style={styles.link}>Employees</Link>
+      <Link to="/admin/projects" style={styles.link}>Projects</Link>
+      <Link to="/admin/task-recommender" style={styles.link}>Task Recommender</Link>
+      <Link to="/admin/task-summary" style={styles.link}>Task Summary</Link>
+      <Link to="/admin/notifications" style={styles.link}>Notifications</Link>
+      {/* Logout is an action, so using a button is more appropriate */}
+      <button style={styles.logoutButton} onClick={handleLogout}>Logout</button>
     </div>
   );
 }
 
 export default AdminDashboard;
-
-
-/*
-React Functional Component:
-AdminDashboard is a stateless functional component written using ES6 arrow functions and useNavigate() hook for navigation.
-Functional components are the modern standard in React, and they support hooks.
-
-useNavigate() from react-router-dom:
-This is a React Router v6 hook that lets you programmatically navigate to a different route (in this case, /UserLogin on logout).
-It replaces the old history.push() used in v5. It only works inside a component that’s rendered within a <BrowserRouter>.
-
-Props usage (props.setSelectedSection):
-props stands for properties. It is the standard way to pass data from a parent component to a child component in React.
-The component receives a setSelectedSection function from its parent to dynamically switch views (like showing Home, Managers, Employees etc.).
-This shows parent-to-child communication and state lifting.
-
-Inline CSS Styling:
-The styles object defines CSS-in-JS styling.
-This is useful when styles are component-specific, and avoids external CSS files.
-The sidebar uses Flexbox (display: 'flex', flexDirection: 'column') to stack items vertically.
-
-JSX & Styling (style={styles.sidebar}):
-JSX is used to render HTML-like syntax in JavaScript.
-Here, the sidebar layout is built using JSX and style props apply custom inline styles.
-
-Event Handling (onClick):
-Each sidebar link has an onClick event that triggers a function.
-Either it calls handleNavigation() with a section name or handleLogout() to navigate to login.
-This demonstrates React’s event binding and UI interactivity.
-
-Routing Control via State:
-Clicking any link sets a section via props — the parent will likely use that to conditionally render components (like a dynamic dashboard).
-This is a common technique in React dashboards.
-
-Clean UI Layout:
-The layout includes a title (ACM), header (Admin Dashboard), and interactive links that simulate a sidebar navigation system — a standard pattern in admin panels.
-
-*/

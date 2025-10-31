@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 
 function UserAuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -13,6 +14,7 @@ function UserAuthPage() {
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleToggle = () => {
     setIsLogin(!isLogin);
@@ -36,21 +38,33 @@ function UserAuthPage() {
           role
         });
 
-        setMessage(response.data);
-        if (response.data === 'Login successful') {
-          //localStorage.setItem('username', username);
-        localStorage.setItem('userId', userId); // ✅ Correct
+        const authenticatedUser = response.data;
 
-          if (role === 'admin') navigate('/admintodo');
-          else if (role === 'manager') navigate('/managertodo');
-          else navigate('/emptodo');
-        }
+        if (authenticatedUser && authenticatedUser.id) {
+           // --- THIS IS THE FIX ---
+           // Create the userData object using the VERIFIED data from the backend response.
+           const userData = { 
+               userId: authenticatedUser.id, 
+               username: authenticatedUser.username, 
+               role: authenticatedUser.role 
+           };
+           
+           // The login function will now save the correct ID to local storage.
+           login(userData);
+           
+           // Navigation logic is the same
+           if (authenticatedUser.role === 'admin') navigate('/admin');
+           else if (authenticatedUser.role === 'manager') navigate('/manager');
+           else navigate('/emptodo');
+         } else {
+            // Handle cases where login might fail but not throw an error
+            setMessage('Login failed. Invalid credentials.');
+         }
       } catch (error) {
-        
         console.error('Login error:', error);
         setMessage('Login failed. Please try again.');
       }
-    } else {
+    }  else {
       try {
         const response = await axios.post('http://localhost:8080/user/register', {
           id: userId,

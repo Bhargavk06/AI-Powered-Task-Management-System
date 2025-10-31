@@ -1,38 +1,95 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import LandingPage from './LandingPage';
-import UserAuthPage from './UserLogin';
-import EmployeeTodo from './EmployeeTodo';
-import ManagerTodo from './manager/ManagerTodo';
-import AdminTodo from './admin/AdminTodo';
-import UserLogin from './UserLogin';
-import WebSocketDemo from './WebSocketDemo';
+import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
+
+// STYLES
+import './styles/index.css';
+import './styles/tailwind.css';
+
+// CONTEXT PROVIDERS
+import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './NotificationProvider';
 import ThemeProvider from './ThemeContext';
+
+// GENERAL PAGES
+import LandingPage from './LandingPage';
+import UserLogin from './UserLogin'; // Assuming this is the main login page
+import EmployeeTodo from './EmployeeTodo';
+
+// LAYOUT COMPONENTS (These act as shells/templates for other pages)
+import ManagerTodo from './manager/ManagerTodo';
+import AdminTodo from './admin/AdminTodo';
+
+// SECTION/PAGE COMPONENTS (These will be rendered inside the layouts)
+import ManagerTasks from './manager/ManagerTasks';
 import AssignTaskPage from './admin/AssignTaskPage';
 import EmployeeSectionPage from './admin/EmployeeSectionPage';
-import ThemeToggle from './ThemeToggle'; 
+// SECTION/PAGE COMPONENTS
+
+import ManagerSection from './admin/ManagerSection'; 
+import ProjectSection from './projects/ProjectSection';
+import TaskRecommender from './admin/TaskRecommender'; 
+import AdminHome from './admin/HomeSection'; 
+import TaskSummarySection from './admin/TaskSummarySection'; 
+import AdminNotifications from './admin/NotificationsSection'; 
+ // New component
+import ProjectForm from './projects/ProjectForm'; 
+import EditProjectForm from './projects/EditProjectForm';
+import ProjectDetailsPage from './projects/ProjectDetailsPage';
+import ProjectTaskAssignment from './projects/ProjectTaskAssignment';
+import ManagerProjects from './manager/ManagerProjects';
+
+const ManagerHome = () => <h2>Welcome, Manager</h2>;
 
 function App() {
-  const userId = localStorage.getItem('userId'); // ✅ Common user ID
-
   return (
-    <ThemeProvider>
-    <NotificationProvider userId={userId}>
-      <BrowserRouter>
-        <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<UserAuthPage />} />
-            <Route path="/emptodo" element={<EmployeeTodo />} />
-            <Route path="/managertodo" element={<ManagerTodo />} />
-            <Route path="/admintodo" element={<AdminTodo />} />
-            <Route path="/assignTask/:id" element={<AssignTaskPage />} />
-            <Route path="/employeesection" element={<EmployeeSectionPage />} />
-            <Route path="/UserLogin" element={<UserLogin />} />
-        </Routes>
-      </BrowserRouter>
-    </NotificationProvider>
-    </ThemeProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <ThemeProvider>
+          {/* NotificationProvider might be better placed inside layouts if it depends on user roles */}
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<UserLogin />} />
+              <Route path="/UserLogin" element={<UserLogin />} />
+              
+              {/* Standalone Employee Route */}
+              <Route path="/emptodo" element={<EmployeeTodo />} />
+
+              {/* --- MANAGER NESTED ROUTES --- */}
+              <Route path="/manager" element={<ManagerTodo />}>
+                <Route index element={<ManagerHome />} />
+                <Route path="employees" element={<EmployeeSectionPage />} />
+                <Route path="tasks" element={<ManagerTasks />} />
+                <Route path="assignTask/:id" element={<AssignTaskPage />} />
+                <Route path="projects" element={<ManagerProjects />} />
+                <Route path="projects/:projectId" element={<ProjectDetailsPage />} />
+                <Route path="projects/:projectId/assign/:userId" element={<ProjectTaskAssignment />} />
+                <Route path="task-summary" element={<TaskSummarySection />} />
+              </Route>
+              
+              {/* --- ADMIN NESTED ROUTES (EXPANDED) --- */}
+              <Route path="/admin" element={<AdminTodo />}>
+                  {/* Default page for /admin */}
+                  <Route index element={<AdminHome />} /> 
+                  
+                  {/* Child routes for the Admin dashboard */}
+                  <Route path="managers" element={<ManagerSection />} />
+                  <Route path="employees" element={<EmployeeSectionPage />} />
+                  <Route path="projects" element={<ProjectSection />} />
+                  <Route path="projects/new" element={<ProjectForm />} />
+                  <Route path="projects/edit/:projectId" element={<EditProjectForm />} />
+                  <Route path="projects/:projectId" element={<ProjectDetailsPage />} />
+                  <Route path="projects/:projectId/assign/:userId" element={<ProjectTaskAssignment />} />
+                  <Route path="task-recommender" element={<TaskRecommender />} />
+                  <Route path="task-summary" element={<TaskSummarySection />} />
+                  <Route path="notifications" element={<AdminNotifications />} />
+                  <Route path="assignTask/:id" element={<AssignTaskPage />} />
+              </Route>
+
+            </Routes>
+        </ThemeProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

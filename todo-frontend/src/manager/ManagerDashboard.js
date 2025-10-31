@@ -1,7 +1,10 @@
 import React from 'react';
-import {useNavigate} from 'react-router-dom';
-function ManagerDashboard(props) {
+import { useNavigate, Link } from 'react-router-dom';
+
+function ManagerDashboard() {
   const navigate = useNavigate();
+
+  // STYLES OBJECT -- NOW WITH 'nav' and 'logout'
   const styles = {
     sidebar: {
       width: '250px',
@@ -12,6 +15,8 @@ function ManagerDashboard(props) {
       flexDirection: 'column',
       padding: '0',
       fontFamily: 'Arial, sans-serif',
+      position: 'sticky',
+      top: 0,
     },
     title: {
       textAlign: 'center',
@@ -32,18 +37,25 @@ function ManagerDashboard(props) {
       borderBottom: '1px solid #34495e',
       transition: 'background-color 0.3s',
       cursor: 'pointer',
+      display: 'block', // To make the entire area clickable
     },
-    linkHover: {
-      backgroundColor: '#34495e',
-    },
+    logoutButton: {
+      padding: '15px 20px',
+      color: 'white',
+      textDecoration: 'none',
+      borderBottom: '1px solid #34495e',
+      transition: 'background-color 0.3s',
+      cursor: 'pointer',
+      backgroundColor: 'transparent',
+      border: 'none',
+      textAlign: 'left',
+      width: '100%',
+      fontSize: '16px', // Match link font size
+      fontFamily: 'Arial, sans-serif', // Match link font family
+    }
   };
 
-  const handleNavigation = (section) => {
-    // TODO: Handle navigation (e.g., useNavigate or props)
-    props.setSelectedSection(section);
-  };
-
-  const handleLogout=()=>{
+  const handleLogout = () => {
     navigate('/UserLogin');
   }
 
@@ -51,12 +63,19 @@ function ManagerDashboard(props) {
     <div style={styles.sidebar}>
       <div style={styles.title}>ACM</div>
       <div style={styles.header}>Manager Dashboard</div>
-      <div style={styles.link} onClick={() => handleNavigation('Home')}>Home</div>
-      <div style={styles.link} onClick={() => handleNavigation('Employees')}>Employees</div>
-      <div style={styles.link} onClick={() => handleNavigation('Task Summary')}>Task Summary</div>
-      <div style={styles.link} onClick={() => handleNavigation('Notifications')}>Notifications</div>
-      <div style={styles.link} onClick={() => handleLogout('Logout')}>Logout</div>
+
+      {/* This JSX will now work correctly */}
+      <nav style={styles.nav}>
+        <Link to="/manager" style={styles.link}>Home</Link>
+        <Link to="/manager/employees" style={styles.link}>Employees</Link>
+        <Link to="/manager/tasks" style={styles.link}>Task List</Link>
+        <Link to="/manager/projects" style={styles.link}>Projects</Link>
+        <Link to="/manager/task-summary" style={styles.link}>Task Summary</Link>
+        
+        <button style={styles.logoutButton} onClick={handleLogout}>Logout</button>
+      </nav>
     </div>
   );
 }
+
 export default ManagerDashboard;

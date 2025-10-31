@@ -1,41 +1,91 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import TaskComments from '../TaskComments'; // ✅ Reuse the same component
+import TaskComments from '.././TaskComments'; 
+import TaskCard from '.././TaskCard'; 
+import Icon from '.././components/AppIcon'; 
+import Button from '../components/ui/Button'; 
+import { useAuth } from '../context/AuthContext';
 
 function ManagerTasks() {
-  const [task, setTask] = useState([]);
-  const userId = localStorage.getItem('userId');
-  const [selectedTask, setSelectedTask] = useState(null); // ✅ Track selected task for comments
+  const [tasks, setTasks] = useState([]);
+  const {user} = useAuth();
+  const [selectedTask, setSelectedTask] = useState(null);
   const [unreadMap, setUnreadMap] = useState({});
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [chatResponse, setChatResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isDark, setIsDark] = useState(false); // Dark mode state
+
+  // State for filters and search (matching EmployeeTodo)
+  const [filterStatus, setFilterStatus] = useState('All');
+  const [filterAssignee, setFilterAssignee] = useState('All'); // Not directly used in ManagerTasks for filtering self, but kept for consistency if tasks had assignees beyond self
+  const [filterPriority, setFilterPriority] = useState('All');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState('list'); // 'list', 'kanban', 'calendar'
+  const [sortOrder, setSortOrder] = useState('status');
+
+  // State for Calendar (matching EmployeeTodo)
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+
 
   useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDark]);
+
+
+  useEffect(() => {
+    if(!user){
+      return;
+    }
+    const userId=user.userId;
     if (userId) {
       axios.get(`http://localhost:8080/assigntask/gettask/${userId}`)
-        .then((response) => setTask(response.data))
+        .then((response) => setTasks(response.data))
         .catch((error) => console.log(error));
 
       axios.get(`http://localhost:8080/comments/unread-map/${userId}`)
         .then((res) => setUnreadMap(res.data))
         .catch((err) => console.log("Error loading unread map", err));
     }
-  }, [userId]);
+  }, [user]);
 
-  const handleStatusChange = async (taskId, newStatus) => {
+  // This function is for changing a task's *own* status as a manager.
+  // The TaskCard already has an onStatusChange prop that will handle this
+  // Inside ManagerTasks.js
+ const handleStatusChange = async (taskId, newStatus) => {
     try {
       await axios.put('http://localhost:8080/assigntask/updateStatus', {
         taskId: taskId,
         status: newStatus
       });
-      alert("Status updated!");
+      setTasks(prev =>
+        prev.map(t => t.taskId === taskId ? { ...t, status: newStatus } : t)
+      );
+      // alert("Status updated!");
     } catch (error) {
       console.error("Failed to update status", error);
     }
   };
 
+  const openCommentsModal = async (t) => {
+    try {
+      await axios.get(`http://localhost:8080/comments/view/${t.taskId}/${user.userId}`);
+      setUnreadMap((prev) => ({ ...prev, [t.taskId]: false }));
+      setSelectedTask(t);
+    } catch (err) {
+      console.error("Failed to mark as read", err);
+    }
+  };
+
+
+  // --- Helper Functions for TaskCard ---
+  // These are adapted from EmployeeTodo, ensure your TaskCard can consume them
   const getDeadlineColor = (deadline) => {
     const today = new Date();
     const taskDate = new Date(deadline);
@@ -57,84 +107,410 @@ function ManagerTasks() {
     }
   };
 
-  const openCommentsModal = async (t) => {
-    try {
-      await axios.get(`http://localhost:8080/comments/view/${t.taskId}/${userId}`);
-      setUnreadMap((prev) => ({ ...prev, [t.taskId]: false }));
-      setSelectedTask(t);
-    } catch (err) {
-      console.error("Failed to mark as read", err);
+  const calculateDaysOverdue = (deadline) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const taskDate = new Date(deadline);
+    taskDate.setHours(0, 0, 0, 0);
+
+    if (taskDate < today) {
+      const diffTime = Math.abs(today.getTime() - taskDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays;
+    }
+    return 0;
+  };
+
+  // --- Filtering Logic (Matching EmployeeTodo) ---
+  const filteredTasks = tasks.filter(t => {
+    if (filterStatus !== 'All' && t.status !== filterStatus) {
+      return false;
+    }
+    // Assuming 'assignedTo' exists on the task object for managers to see
+    if (filterAssignee !== 'All' && t.assignedTo !== filterAssignee) {
+      return false;
+    }
+    // Assuming 'priority' exists on the task object
+    if (filterPriority !== 'All' && t.priority !== filterPriority) {
+      return false;
+    }
+    if (searchTerm &&
+        !(t.taskname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          t.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          t.assignedTo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          t.priority?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          t.status?.toLowerCase().includes(searchTerm.toLowerCase()))) {
+      return false;
+    }
+    return true;
+  });
+
+   const sortedAndFilteredTasks = [...filteredTasks].sort((a, b) => {
+    switch (sortOrder) {
+      case 'deadline-asc':
+        return new Date(a.deadline) - new Date(b.deadline);
+      case 'deadline-desc':
+        return new Date(b.deadline) - new Date(a.deadline);
+      case 'priority':
+        // Custom sort for priority: High > Medium > Low
+        const priorityOrder = { high: 1, medium: 2, low: 3 };
+        return (priorityOrder[a.priority?.toLowerCase()] || 4) - (priorityOrder[b.priority?.toLowerCase()] || 4);
+      case 'status':
+      default:
+        // Default sort by status: To Do > In Progress > Done
+        const statusOrder = { "To Do": 1, "In Progress": 2, "Done": 3 };
+        return (statusOrder[a.status] || 4) - (statusOrder[b.status] || 4);
+    }
+  });
+
+  // Calculate task counts (matching EmployeeTodo)
+  const totalTasks = tasks.length;
+  const inProgressTasks = tasks.filter(t => t.status === 'In Progress').length;
+  const completedTasks = tasks.filter(t => t.status === 'Done').length;
+  const overdueTasks = tasks.filter(t => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const taskDate = new Date(t.deadline);
+      taskDate.setHours(0, 0, 0, 0);
+      return taskDate < today && t.status !== 'Done';
+  }).length;
+
+  const uniqueAssignees = [...new Set(tasks.map(t => t.assignedTo))].filter(Boolean);
+
+  // Group tasks for Kanban view (matching EmployeeTodo)
+  const tasksByStatus = filteredTasks.reduce((acc, t) => {
+    const status = t.status || 'No Status';
+    if (!acc[status]) {
+      acc[status] = [];
+    }
+    acc[status].push(t);
+    return acc;
+  }, {});
+
+  const statusColumns = ['To Do', 'In Progress', 'Done'];
+
+  const getPriorityColorKanban = (priority) => {
+    switch (priority?.toLowerCase()) {
+      case 'high': return '#ff4d4f';
+      case 'medium': return '#ffa940';
+      case 'low': return '#52c41a';
+      default: return '#d9d9d9';
     }
   };
 
-  return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
-      <h2 style={{ textAlign: 'center' }}>Welcome, {userId}</h2>
-      <h3 style={{ textAlign: 'center' }}>Assigned Tasks:</h3>
+  // --- Calendar Logic (Matching EmployeeTodo) ---
+  const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+  const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
 
-      {Array.isArray(task) && task.length > 0 ? (
-        task.map((t, index) => (
-          <div key={index} style={{
-            border: '1px solid #ccc',
-            borderLeft: `8px solid ${getDeadlineColor(t.deadline)}`,
-            padding: '15px',
-            marginBottom: '15px',
-            borderRadius: '8px',
-            backgroundColor: '#f9f9f9'
-          }}>
-            <h4>📌 {t.taskname}</h4>
-            <p>Status: <strong>{t.status}</strong></p>
-            <p>Description: {t.description}</p>
-            <p>
-              🕒 Deadline: <span style={{ fontWeight: 'bold', color: getDeadlineColor(t.deadline) }}>{t.deadline}</span>
-            </p>
+  const getPriorityDotColor = (priority) => {
+    switch (priority?.toLowerCase()) {
+      case 'high': return 'red';
+      case 'medium': return 'orange';
+      case 'low': return 'green';
+      default: return 'gray';
+    }
+  };
 
-            <select
-              value={t.status}
-              onChange={(e) => handleStatusChange(t.taskId, e.target.value)}
-              style={styles.selectMenu}
-            >
-              <option value="To Do">To Do</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Done">Done</option>
-            </select>
+  const tasksByDate = filteredTasks.reduce((acc, t) => {
+    const date = new Date(t.deadline).toLocaleDateString('en-CA');
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(t);
+    return acc;
+  }, {});
 
-       <button onClick={() => openCommentsModal(t)} style={styles.viewBtn}>
-              View comments {unreadMap[t.taskId] && <span style={styles.redDot}></span>}
-            </button>
+  const handleMonthChange = (direction) => {
+    if (direction === 'prev') {
+      setCurrentMonth(prev => (prev === 0 ? 11 : prev - 1));
+      if (currentMonth === 0) setCurrentYear(prev => prev - 1);
+    } else {
+      setCurrentMonth(prev => (prev === 11 ? 0 : prev + 1));
+      if (currentMonth === 11) setCurrentYear(prev => prev + 1);
+    }
+  };
+
+  const renderCalendarDays = () => {
+    const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+    const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
+
+    const actualFirstDayOffset = firstDay;
+
+    const blanks = Array.from({ length: actualFirstDayOffset }, (_, i) => (
+      <div key={`blank-${i}`} className="min-h-[100px]"></div>
+    ));
+
+    const days = Array.from({ length: daysInMonth }, (_, i) => {
+      const day = i + 1;
+      const dateObj = new Date(currentYear, currentMonth, day);
+      const dateStr = dateObj.toLocaleDateString('en-CA');
+      const dayTasks = tasksByDate[dateStr] || [];
+      const isToday = new Date().toLocaleDateString('en-CA') === dateStr;
+
+      return (
+        <div
+          key={`day-${day}`}
+          className="min-h-[100px] p-2 text-sm relative border border-gray-200 dark:border-gray-700 flex flex-col items-start overflow-hidden bg-white dark:bg-gray-800"
+        >
+          <span className={`font-bold relative z-10 ${isToday ? 'bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center float-right text-xs' : 'text-gray-700 dark:text-gray-50'}`}>
+            {day}
+          </span>
+          <div className="mt-1 w-full max-h-[calc(100%-30px)] overflow-y-auto">
+            {dayTasks.map(t => (
+              <div
+                key={t.taskId}
+                className="flex items-center rounded-sm px-1 py-1 mb-1 cursor-pointer text-xs whitespace-nowrap overflow-hidden text-ellipsis w-[calc(100%-2px)]"
+                style={{
+                  backgroundColor: getPriorityDotColor(t.priority) === 'red' ? '#ffe8e6' : getPriorityDotColor(t.priority) === 'orange' ? '#fff1e6' : '#e6ffe6',
+                  color: getPriorityDotColor(t.priority) === 'red' ? '#cf1322' : getPriorityDotColor(t.priority) === 'orange' ? '#d46b08' : '#237804',
+                }}
+                onClick={() => setSelectedTask(t)}
+              >
+                <span
+                  className="w-2 h-2 rounded-full mr-1 flex-shrink-0"
+                  style={{ backgroundColor: getPriorityDotColor(t.priority) }}
+                  title={t.priority}
+                ></span>
+                {t.taskname}
+              </div>
+            ))}
           </div>
-        ))
-      ) : (
-        <p style={{ textAlign: 'center' }}>No tasks found.</p>
+        </div>
+      );
+    });
+
+    return [...blanks, ...days];
+  };
+
+  const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+
+  return (
+    <div className="min-h-screen p-5 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-50 transition-colors duration-300">
+      <h1 className="text-4xl font-bold text-center mb-2 text-gray-900 dark:text-gray-50">Manager Tasks</h1>
+      <p className="text-lg text-center mb-8 text-gray-600 dark:text-gray-300">Oversee and manage tasks assigned to your team members</p>
+
+      <div className="flex flex-wrap justify-between items-center mb-5 gap-4">
+        {/* View Toggle Buttons */}
+        <div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700 shadow-sm">
+          <button
+            className={`px-4 py-2 text-sm cursor-pointer transition-all duration-200 border-r border-gray-300 dark:border-gray-700
+                      ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-transparent text-gray-700 dark:text-gray-50 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            onClick={() => setViewMode('list')}
+          >
+             <Icon name="List" size={16} className="inline-block mr-1" /> List View
+          </button>
+          <button
+            className={`px-4 py-2 text-sm cursor-pointer transition-all duration-200 border-r border-gray-300 dark:border-gray-700
+                      ${viewMode === 'kanban' ? 'bg-blue-600 text-white' : 'bg-transparent text-gray-700 dark:text-gray-50 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            onClick={() => setViewMode('kanban')}
+          >
+             <Icon name="LayoutDashboard" size={16} className="inline-block mr-1" /> Kanban Board
+          </button>
+          <button
+            className={`px-4 py-2 text-sm cursor-pointer transition-all duration-200
+                      ${viewMode === 'calendar' ? 'bg-blue-600 text-white' : 'bg-transparent text-gray-700 dark:text-gray-50 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            onClick={() => setViewMode('calendar')}
+          >
+            <Icon name="Calendar" size={16} className="inline-block mr-1" /> Calendar View
+          </button>
+        </div>
+
+        {/* Task Statistics and Search */}
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-300">
+            <span className="flex items-center"><span className="w-2 h-2 rounded-full bg-blue-500 mr-1"></span> Total: {totalTasks}</span>
+            <span className="flex items-center"><span className="w-2 h-2 rounded-full bg-orange-500 mr-1"></span> In Progress: {inProgressTasks}</span>
+            <span className="flex items-center"><span className="w-2 h-2 rounded-full bg-green-500 mr-1"></span> Completed: {completedTasks}</span>
+            <span className="flex items-center"><span className="w-2 h-2 rounded-full bg-red-500 mr-1"></span> Overdue: {overdueTasks}</span>
+          </div>
+          <input
+            type="text"
+            placeholder="Search tasks..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-50 text-sm w-48 transition-all duration-300 focus:ring-blue-500 focus:border-blue-500"
+          />
+          <Button
+            onClick={() => setIsDark(!isDark)}
+            variant="ghost"
+            size="sm"
+            className="ml-2 text-gray-700 dark:text-gray-50 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            <Icon name={isDark ? "Sun" : "Moon"} size={20} />
+          </Button> 
+          {/* Manager tasks might not have a logout, but if it did, it would go here */}
+          {/* <Button onClick={handleLogout} variant="destructive" size="sm" className="ml-2">
+            <Icon name="LogOut" size={16} className="mr-1" /> Logout
+          </Button> */}
+        </div>
+      </div>
+
+      {/* Filter Section (Matching EmployeeTodo) */}
+      <div className="flex flex-wrap gap-4 mb-6 p-4 border-y border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+        <div className="flex items-center gap-2">
+          <label htmlFor="statusFilter" className="text-sm font-medium text-gray-700 dark:text-gray-300">Status:</label>
+          <select
+            id="statusFilter"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-right-0"
+          >
+            <option value="All">All</option>
+            <option value="To Do">To Do</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Done">Done</option>
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label htmlFor="priorityFilter" className="text-sm font-medium text-gray-700 dark:text-gray-300">Priority:</label>
+          <select
+            id="priorityFilter"
+            value={filterPriority}
+            onChange={(e) => setFilterPriority(e.target.value)}
+            className="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-right-0"
+          >
+            <option value="All">All</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label htmlFor="assigneeFilter" className="text-sm font-medium text-gray-700 dark:text-gray-300">Assignee:</label>
+          <select
+            id="assigneeFilter"
+            value={filterAssignee}
+            onChange={(e) => setFilterAssignee(e.target.value)}
+            className="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-right-0"
+          >
+            <option value="All">All</option>
+            {uniqueAssignees.map(assignee => (
+              <option key={assignee} value={assignee}>{assignee}</option>
+            ))}
+          </select>
+        </div>
+         {/*SORT BY */}
+        <div className="flex items-center gap-2">
+            <label htmlFor="statusSort" className="text-sm font-medium text-gray-700 dark:text-gray-300">Sort by:</label>
+            <select
+                id="statusSort"
+                value={sortOrder} // Bind to the new state
+                onChange={(e) => setSortOrder(e.target.value)} // Update the state on change
+                className="px-3 py-2 text-sm rounded-lg border border-gray-300 ... "
+            >
+                <option value="status">Status</option>
+                <option value="priority">Priority</option>
+                <option value="deadline-asc">Due Date (Asc)</option>
+                <option value="deadline-desc">Due Date (Desc)</option>
+            </select>
+        </div>
+      </div>
+
+
+      {/* Conditional Rendering based on viewMode (Matching EmployeeTodo) */}
+       {viewMode === 'list' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sortedAndFilteredTasks.length > 0 ? (
+              sortedAndFilteredTasks.map((task) => (
+                <TaskCard
+                  key={task.taskId}
+                  task={task}
+                  onStatusChange={handleStatusChange}
+                  showStatusChanger={true}
+                  openCommentsModal={() => openCommentsModal(task)}
+                  unreadComments={unreadMap[task.taskId]}
+                />
+              ))
+            ) : (
+              <p className="text-center text-gray-500 col-span-full py-10">No tasks found matching your filters.</p>
+            )}
+        </div>
       )}
 
-      {selectedTask && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalBox}>
-            <h3>💬 Comments for Task: {selectedTask.taskname}</h3>
-            <TaskComments taskId={selectedTask.taskId} userId={userId} />
-            <button onClick={() => setSelectedTask(null)} style={styles.closeBtn}>Close</button>
+      {viewMode === 'kanban' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 mt-4">
+          {statusColumns.map(status => (
+            <div key={status} className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 min-h-[300px] flex flex-col shadow-sm">
+              <h4 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-50 text-center">
+                {status} ({tasksByStatus[status]?.length || 0})
+              </h4>
+              <div className="flex-grow flex flex-col gap-3 min-h-[50px]">
+                {tasksByStatus[status] && tasksByStatus[status].length > 0 ? (
+                  tasksByStatus[status].map(t => (
+                    <TaskCard
+                      key={t.taskId}
+                      task={t}
+                      onStatusChange={handleStatusChange}
+                      showStatusChanger={true}
+                      openCommentsModal={openCommentsModal}
+                      unreadComments={unreadMap[t.taskId]}
+                    />
+                  ))
+                ) : (
+                  <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-5">No tasks in this column.</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {viewMode === 'calendar' && (
+        <div className="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-md p-5">
+          <div className="flex justify-between items-center mb-5">
+            <button
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-8 h-8 flex items-center justify-center text-lg transition-colors duration-200"
+              onClick={() => handleMonthChange('prev')}
+            >
+              <Icon name="ChevronLeft" size={20} />
+            </button>
+            <span className="text-xl font-bold text-gray-800 dark:text-gray-50">
+              {monthNames[currentMonth]} {currentYear}
+            </span>
+            <button
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-8 h-8 flex items-center justify-center text-lg transition-colors duration-200"
+              onClick={() => handleMonthChange('next')}
+            >
+              <Icon name="ChevronRight" size={20} />
+            </button>
+          </div>
+          <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
+            {weekDays.map(day => (
+              <div key={day} className="bg-gray-100 dark:bg-gray-700 p-2 text-center font-bold text-sm text-gray-600 dark:text-gray-300">
+                {day.substring(0, 3)}
+              </div>
+            ))}
+            {renderCalendarDays()}
           </div>
         </div>
       )}
 
-       {/* 🔘 Floating Chat Icon */}
+
+
+      {/* Floating Chat Icon */}
       <button
-        style={styles.chatIcon}
+        className="fixed bottom-6 right-6 bg-blue-500 text-white rounded-full w-14 h-14 flex items-center justify-center text-2xl shadow-lg hover:bg-blue-600 transition-colors duration-200 z-50"
         onClick={() => setChatOpen(!chatOpen)}
       >
         💬
       </button>
 
-      {/* 💬 Chat Window */}
+      {/* Chat Window */}
       {chatOpen && (
-        <div style={styles.chatWindow}>
-          <h4 style={{ margin: '0 0 10px 0' }}>🤖 Ask Gemini</h4>
+        <div
+          className={`fixed bottom-24 right-6 w-80 h-[400px] p-4 rounded-lg shadow-xl flex flex-col z-50
+                      ${isDark ? 'bg-gray-900 text-gray-50' : 'bg-white text-gray-800'}`}
+        >
+          <h4 className="text-lg font-semibold mb-3">🤖 Ask Gemini</h4>
           <textarea
             placeholder="Type your prompt..."
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
-            style={styles.chatInput}
+            className="flex-grow w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md mb-3 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-50"
           />
           <button
             onClick={async () => {
@@ -151,135 +527,35 @@ function ManagerTasks() {
                 setIsLoading(false);
               }
             }}
-            style={styles.sendBtn}
+            className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading}
           >
-            {isLoading ? "..." : "Send"}
+            {isLoading ? "Sending..." : "Send"}
           </button>
           {chatResponse && (
-            <div style={styles.chatResponse}>
-              <strong>Gemini:</strong> {chatResponse}
+            <div className="mt-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-md overflow-y-auto max-h-32 text-sm break-words">
+              <strong className="block mb-1 text-blue-600 dark:text-blue-400">Gemini:</strong> {chatResponse}
             </div>
           )}
         </div>
       )}
+      {selectedTask && (
+        // TaskComments component should be adapted to Tailwind and accept props for modal management
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000]">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative">
+            <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-50">💬 Comments for Task: {selectedTask.taskname}</h3>
+            <TaskComments taskId={selectedTask.taskId} userId={user.userId} />
+            <Button
+              onClick={() => setSelectedTask(null)}
+              className="mt-5 bg-red-600 hover:bg-red-700 text-white"
+            >
+              Close
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
-        
   );
 }
-
-const styles = {
-  selectMenu: {
-    backgroundColor: '#1890ff',
-    color: 'white',
-    padding: '8px 12px',
-    fontSize: '14px',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    width: '150px',
-    marginTop: '10px',
-    marginRight: '10px'
-  },
-  viewBtn: {
-    backgroundColor: '#13c2c2',
-    color: '#fff',
-    border: 'none',
-    padding: '8px 12px',
-    borderRadius: '6px',
-    cursor: 'pointer'
-  },
-  modalOverlay: {
-    position: 'fixed',
-    top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000
-  },
-  modalBox: {
-    backgroundColor: '#fff',
-    padding: '25px',
-    borderRadius: '10px',
-    width: '600px',
-    maxHeight: '80vh',
-    overflowY: 'auto',
-    boxShadow: '0 0 10px rgba(0,0,0,0.25)'
-  },
-  closeBtn: {
-    marginTop: '20px',
-    padding: '8px 12px',
-    backgroundColor: '#ff4d4f',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer'
-  },
-   redDot: {
-    display: 'inline-block',
-    width: '8px',
-    height: '8px',
-    backgroundColor: 'red',
-    borderRadius: '50%',
-    marginLeft: '6px',
-    verticalAlign: 'middle'
-  },
-  chatIcon: {
-    position: 'fixed',
-    bottom: '30px',
-    right: '30px',
-    backgroundColor: '#1890ff',
-    color: 'white',
-    fontSize: '24px',
-    border: 'none',
-    borderRadius: '50%',
-    width: '60px',
-    height: '60px',
-    cursor: 'pointer',
-    boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
-    zIndex: 999
-  },
-  chatWindow: {
-    position: 'fixed',
-    bottom: '100px',
-    right: '30px',
-    width: '300px',
-    backgroundColor: 'white',
-    border: '1px solid #ccc',
-    borderRadius: '10px',
-    padding: '15px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-    zIndex: 998
-  },
-  chatInput: {
-    width: '100%',
-    height: '60px',
-    marginBottom: '10px',
-    padding: '8px',
-    borderRadius: '6px',
-    border: '1px solid #ccc',
-    resize: 'none'
-  },
-  sendBtn: {
-    backgroundColor: '#52c41a',
-    color: 'white',
-    border: 'none',
-    padding: '6px 12px',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    width: '100%'
-  },
-  chatResponse: {
-  marginTop: '10px',
-  backgroundColor: '#f6f6f6',
-  padding: '10px',
-  borderRadius: '6px',
-  fontSize: '14px',
-  maxHeight: '200px',        // 👈 Fixed height
-  overflowY: 'auto',         // 👈 Enables vertical scrolling
-  whiteSpace: 'pre-wrap'     // 👈 Preserves line breaks from the LLM
-}
-
-};
 
 export default ManagerTasks;

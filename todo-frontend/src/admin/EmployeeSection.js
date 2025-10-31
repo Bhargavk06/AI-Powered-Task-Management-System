@@ -27,9 +27,7 @@ function EmployeeSection() {
   );
 
   const handleClick = (employeeId) => {
-    navigate(`/assignTask/${employeeId}`, {
-      state: { from: { path: '/admintodo', section: 'Employees' } }
-    });
+    navigate(`../assignTask/${employeeId}`);
   };
 
   const handleDelete = (e, employeeId) => {
@@ -47,31 +45,31 @@ function EmployeeSection() {
   };
 
   return (
-    <div style={styles.container}>
-      <h2>Employee Section</h2>
+    <div className="h-full flex flex-col p-6 bg-gray-100">
+      <h2 className="text-2xl font-bold mb-4">Employee Section</h2>
 
       <input
         type="text"
         placeholder="Search for Employees"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        style={styles.searchInput}
+        className="p-2 w-full md:w-2/3 lg:w-1/2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
 
-      <div style={styles.listContainer}>
+      <div className="mt-4 overflow-y-auto flex-1 pr-2 max-h-[70vh]">
         {filteredEmployees.length > 0 ? (
           filteredEmployees.map((employee) => (
             <div
               key={employee.id}
-              style={styles.card}
+              className="relative border border-gray-200 p-4 mb-4 cursor-pointer bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
               onClick={() => handleClick(employee.id)}
             >
-              <h4>{employee.username}</h4>
-              <p>Email: {employee.profile?.email}</p>
-              <p>Phone: {employee.profile?.phone}</p>
+              <h4 className="text-lg font-semibold mb-2">{employee.username}</h4>
+              <p className="text-gray-600">Email: {employee.profile?.email}</p>
+              <p className="text-gray-600">Phone: {employee.profile?.phone}</p>
 
               <button
-                style={styles.deleteButton}
+                className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded text-sm"
                 onClick={(e) => handleDelete(e, employee.id)}
               >
                 Delete
@@ -79,50 +77,11 @@ function EmployeeSection() {
             </div>
           ))
         ) : (
-          <p>No employees found.</p>
+          <p className="text-gray-500 mt-4">No employees found.</p>
         )}
       </div>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    height: '100%', // Fill available height
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  searchInput: {
-    padding: '10px',
-    width: '60%',
-    fontSize: '16px',
-    marginTop: '10px',
-  },
-  listContainer: {
-    marginTop: '20px',
-    overflowY: 'auto',
-    flex: 1,
-    paddingRight: '10px',
-    maxHeight: '70vh', // Or adjust as needed
-  },
-  card: {
-    position: 'relative',
-    border: '1px solid #ccc',
-    padding: '10px',
-    marginBottom: '10px',
-    cursor: 'pointer',
-    background: '#fff',
-  },
-  deleteButton: {
-    position: 'absolute',
-    top: '10px',
-    right: '10px',
-    backgroundColor: '#e74c3c',
-    color: 'white',
-    border: 'none',
-    padding: '5px 10px',
-    cursor: 'pointer',
-  },
-};
 
 export default EmployeeSection;
