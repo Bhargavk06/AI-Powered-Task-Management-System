@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import TaskComments from '.././TaskComments'; 
+import TaskComments from '../TaskComments'; 
 import TaskCard from '.././TaskCard'; 
 import Icon from '.././components/AppIcon'; 
 import Button from '../components/ui/Button'; 
@@ -16,6 +16,7 @@ function ManagerTasks() {
   const [chatResponse, setChatResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isDark, setIsDark] = useState(false); // Dark mode state
+  const [selectedTaskForComments, setSelectedTaskForComments] = useState(null); 
 
   // State for filters and search (matching EmployeeTodo)
   const [filterStatus, setFilterStatus] = useState('All');
@@ -37,7 +38,6 @@ function ManagerTasks() {
       document.documentElement.classList.remove('dark');
     }
   }, [isDark]);
-
 
   useEffect(() => {
     if(!user){
@@ -73,11 +73,13 @@ function ManagerTasks() {
     }
   };
 
-  const openCommentsModal = async (t) => {
+const openCommentsModal = async (task) => {
+    if (!user || !user.userId) return;
     try {
-      await axios.get(`http://localhost:8080/comments/view/${t.taskId}/${user.userId}`);
-      setUnreadMap((prev) => ({ ...prev, [t.taskId]: false }));
-      setSelectedTask(t);
+      await axios.get(`http://localhost:8080/comments/view/${task.taskId}/${user.userId}`);
+      setUnreadMap((prev) => ({ ...prev, [task.taskId]: false }));
+      // This state update is what opens the modal
+      setSelectedTaskForComments(task); 
     } catch (err) {
       console.error("Failed to mark as read", err);
     }
@@ -446,7 +448,7 @@ function ManagerTasks() {
                       task={t}
                       onStatusChange={handleStatusChange}
                       showStatusChanger={true}
-                      openCommentsModal={openCommentsModal}
+                      openCommentsModal={() => openCommentsModal(t)}
                       unreadComments={unreadMap[t.taskId]}
                     />
                   ))
@@ -539,21 +541,13 @@ function ManagerTasks() {
           )}
         </div>
       )}
-      {selectedTask && (
-        // TaskComments component should be adapted to Tailwind and accept props for modal management
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000]">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative">
-            <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-50">💬 Comments for Task: {selectedTask.taskname}</h3>
-            <TaskComments taskId={selectedTask.taskId} userId={user.userId} />
-            <Button
-              onClick={() => setSelectedTask(null)}
-              className="mt-5 bg-red-600 hover:bg-red-700 text-white"
-            >
-              Close
-            </Button>
-          </div>
-        </div>
-      )}
+      {selectedTaskForComments && (
+    <TaskComments
+      task={selectedTaskForComments}
+      userId={user.userId}
+      onClose={() => setSelectedTaskForComments(null)}
+    />
+)}
     </div>
   );
 }

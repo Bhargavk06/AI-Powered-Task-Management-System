@@ -4,6 +4,8 @@ import axios from 'axios';
 import TaskComments from '../TaskComments';
 import TaskCard from '../TaskCard';
 import Icon from '../components/AppIcon';
+import { X, Type, AlignLeft, Calendar, Plus, ArrowLeft } from 'react-feather';
+
 
 
 // Helper functions (keep these)
@@ -16,13 +18,14 @@ function AssignTask() {
   const navigate = useNavigate();
   const location = useLocation();
   const [unreadMap, setUnreadMap] = useState({});
-  const [showForm, setShowForm] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false); 
   const [taskName, setTaskName] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState('To Do');
   const [deadline, setDeadline] = useState('');
   const [tasks, setTasks] = useState([]);
   const [task,setTask] = useState([]);
+  const [priority, setPriority] = useState('medium');
   const [expandedTaskId, setExpandedTaskId] = useState(null);
 
   const [isEditing, setIsEditing] = useState(false);
@@ -56,6 +59,16 @@ function AssignTask() {
 
   const [selectedTask, setSelectedTask] = useState(null); //  Track selected task for viewing comments
 
+  const fetchData = () => {
+    axios.get(`http://localhost:8080/assigntask/gettask/${id}`)
+      .then((response) => setTasks(response.data))
+      .catch((error) => console.error("Fetching Error: ", error));
+
+    axios.get(`http://localhost:8080/comments/unread-map/${userId}`)
+      .then((res) => setUnreadMap(res.data))
+      .catch((err) => console.log("Error loading unread map", err));
+  };
+
 
   useEffect(() => {
     const fetchTasks = () => {
@@ -80,23 +93,24 @@ function AssignTask() {
     navigate('/UserLogin');
   };
 
-  const handleAssign = async (e) => {
+   const handleAssign = (e) => {
     e.preventDefault();
-    const newTask = { taskname: taskName, description, status, deadline };
-    try {
-      await axios.post(`http://localhost:8080/assigntask/assign/${id}?assignerId=${userId}`, newTask);
-      // Re-fetch tasks to get the latest list
-      const response = await axios.get(`http://localhost:8080/assigntask/gettask/${id}`);
-      setTasks(response.data);
-      resetForm();
-    } catch (error) {
-      console.error("Error assigning task:", error);
-    }
+    const newTask = { taskname: taskName, description, deadline, priority, status: 'To Do' };
+    axios.post(`http://localhost:8080/assigntask/assign/${id}?assignerId=${userId}`, newTask)
+      .then(() => {
+        fetchData(); // Refresh the list
+        resetForm(); // This will now be called on success
+      })
+      .catch((error) => {
+        console.error("Error assigning task:", error);
+        alert("Failed to assign task.");
+        // It's good practice to not close the form on error so the user can retry
+      });
   };
 
   const handleUpdate = (e) => {
     e.preventDefault();
-    const updatedTask = { taskId: editTaskId, taskname: taskName, description, status, deadline };
+    const updatedTask = { taskId: editTaskId, taskname: taskName, description, status, deadline, priority };
     axios.put(`http://localhost:8080/assigntask/updateTask`, updatedTask)
       .then(() => axios.get(`http://localhost:8080/assigntask/gettask/${id}`))
       .then((response) => {
@@ -140,21 +154,22 @@ function AssignTask() {
       setTaskName(taskToEdit.taskname);
       setDescription(taskToEdit.description);
       setStatus(taskToEdit.status);
+      setPriority(task.priority || 'medium');
       setDeadline(taskToEdit.deadline);
       setIsEditing(true);
       setEditTaskId(taskId);
-      setShowForm(true);
+      setIsFormOpen(true);
     }
   };
 
   const resetForm = () => {
     setTaskName('');
     setDescription('');
-    setStatus('To Do');
+    setPriority('medium');
     setDeadline('');
     setIsEditing(false);
     setEditTaskId(null);
-    setShowForm(false);
+    setIsFormOpen(false); // Close the form after submission
   };
 
   const toggleDetails = (taskId) => {
@@ -317,72 +332,67 @@ function AssignTask() {
 
 
   return (
-    <div style={{ padding: '30px', textAlign: 'center' }}>
-      <h2>Employee   #{id} Task List</h2>
-      <button onClick={handleBack} style={styles.backBtn}>← Back</button>
-
-      <button onClick={() => setShowForm(!showForm)} style={styles.addTaskBtn}>
-        {showForm ? 'Close Form' : (isEditing ? 'Edit Task' : 'Add Task')}
-      </button>
-
-      {showForm && (
-        <form
-          onSubmit={isEditing ? handleUpdate : handleAssign}
-          style={styles.form}
-        >
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Task Name:</label>
-            <input
-              value={taskName}
-              onChange={(e) => setTaskName(e.target.value)}
-              required
-              style={styles.input}
-            />
-          </div>
-
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Description:</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-              style={styles.textarea}
-            />
-          </div>
-
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Status:</label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              style={styles.select}
-            >
-              <option>To Do</option>
-            </select>
-          </div>
-
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Deadline:</label>
-            <input
-              type="date"
-              value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
-              required
-              style={styles.input}
-            />
-          </div>
-
-          <button type="submit" style={styles.button}>
-            {isEditing ? 'Save Changes' : 'Assign Task'}
+        <div className="p-8 bg-gray-50 min-h-screen">
+      {/* --- 1. HEADER SECTION --- */}
+      {/* This flex container correctly aligns the title on the left and the button on the right */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <div>
+          <button onClick={() => navigate(-1)} className="flex items-center text-sm font-medium text-gray-500 hover:text-gray-800 mb-2 transition-colors">
+            <ArrowLeft size={16} className="mr-1.5" />
+            Back to Employee List
           </button>
+          <h1 className="text-3xl font-bold text-gray-800">
+            Tasks for <span className="text-indigo-600">{id}</span>
+          </h1>
+        </div>
+        <button
+          onClick={() => { resetForm(); setIsEditing(false); setIsFormOpen(true); }}
+          className="mt-4 md:mt-0 flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+        >
+          <Plus size={18} className="mr-2" />
+          Assign New Task
+        </button>
+      </div>
 
-          {isEditing && (
-            <button type="button" onClick={resetForm} style={styles.cancelButton}>
-              Cancel
-            </button>
-          )}
-        </form>
-
+      {/* --- 2. THE MODAL FORM (No changes needed here, it's correct) --- */}
+      {isFormOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-2xl p-8 w-full max-w-lg">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">{isEditing ? 'Edit Task' : 'Assign New Task'}</h2>
+              <button onClick={resetForm} className="p-1 rounded-full text-gray-500 hover:bg-gray-100">
+                <X size={24} />
+              </button>
+            </div>
+            <form onSubmit={isEditing ? handleUpdate : handleAssign}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-600 mb-1">Task Name</label>
+                <div className="relative"><Type className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" /><input type="text" value={taskName} onChange={e => setTaskName(e.target.value)} required className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g., Complete the quarterly report" /></div>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-600 mb-1">Description</label>
+                <div className="relative"><AlignLeft className="absolute left-3 top-3 w-5 h-5 text-gray-400" /><textarea value={description} onChange={e => setDescription(e.target.value)} required className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" rows="3" placeholder="Add more details about the task..." /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Deadline</label>
+                  <div className="relative"><Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" /><input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} required className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" /></div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Priority</label>
+                  <select value={priority} onChange={e => setPriority(e.target.value)} className="w-full py-2.5 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <button type="submit" className="px-6 py-2.5 font-semibold text-white bg-indigo-600 rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">{isEditing ? 'Save Changes' : 'Assign Task'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* Filters */}
