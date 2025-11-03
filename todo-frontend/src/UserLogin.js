@@ -100,15 +100,6 @@ function UserAuthPage() {
           style={styles.input}
         />
 
-        <input
-          type="text"
-          placeholder="Username"
-          required
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          style={styles.input}
-        />
-
         {!isLogin && (
           <>
             <input

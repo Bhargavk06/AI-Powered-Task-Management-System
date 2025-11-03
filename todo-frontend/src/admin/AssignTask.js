@@ -111,13 +111,24 @@ function AssignTask() {
   const handleUpdate = (e) => {
     e.preventDefault();
     const updatedTask = { taskId: editTaskId, taskname: taskName, description, status, deadline, priority };
-    axios.put(`http://localhost:8080/assigntask/updateTask`, updatedTask)
+    axios.put(`http://localhost:8080/assigntask/updateTask/${editTaskId}`, updatedTask)
       .then(() => axios.get(`http://localhost:8080/assigntask/gettask/${id}`))
       .then((response) => {
         setTasks(response.data);
         resetForm();
       })
-      .catch((error) => console.error("Error updating task:", error));
+      .catch((error) => {
+        // --- THIS IS THE CRITICAL IMPROVEMENT ---
+        console.error("Error updating task:", error);
+        
+        // Check if the backend sent a specific error message
+        if (error.response && error.response.data) {
+          // Assuming the backend sends an object like { message: "Error details" }
+          alert(`Failed to update task: ${error.response.data.message || 'Check console for details.'}`);
+        } else {
+          alert("Failed to update task. See the console for more details.");
+        }
+      });
   };
 
     const handleStatusChange = async (taskId, newStatus) => {
@@ -148,16 +159,16 @@ function AssignTask() {
     }
   };
 
-  const editTask = (taskId) => {
-    const taskToEdit = tasks.find(task => task.taskId === taskId);
+  const editTask = (taskToEdit) => {
+   // const taskToEdit = tasks.find(task => task.taskId === taskId);
     if (taskToEdit) {
       setTaskName(taskToEdit.taskname);
       setDescription(taskToEdit.description);
       setStatus(taskToEdit.status);
-      setPriority(task.priority || 'medium');
+      setPriority(taskToEdit.priority || 'medium');
       setDeadline(taskToEdit.deadline);
       setIsEditing(true);
-      setEditTaskId(taskId);
+      setEditTaskId(taskToEdit.taskId);
       setIsFormOpen(true);
     }
   };
@@ -387,6 +398,22 @@ function AssignTask() {
                   </select>
                 </div>
               </div>
+
+               {isEditing && (
+      <div className="md:col-span-2"> {/* Make it span full width if desired */}
+        <label className="block text-sm font-medium text-gray-600 mb-1">Status</label>
+        <select
+          value={status}
+          onChange={e => setStatus(e.target.value)}
+          className="w-full py-2.5 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          <option value="To Do">To Do</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Done">Done</option>
+        </select>
+      </div>
+    )}
+  
               <div className="flex justify-end">
                 <button type="submit" className="px-6 py-2.5 font-semibold text-white bg-indigo-600 rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">{isEditing ? 'Save Changes' : 'Assign Task'}</button>
               </div>

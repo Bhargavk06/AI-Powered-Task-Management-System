@@ -6,6 +6,8 @@ import TaskCard from './TaskCard';
 import Icon from './components/AppIcon';
 import Button from './components/ui/Button';
 import { useAuth } from './context/AuthContext';
+import ChatWindow from './ChatWindow'; 
+import { MessageSquare } from 'react-feather'; 
 
 // Helper functions (keep these)
 const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
@@ -25,16 +27,13 @@ const calculateDaysOverdue = (deadline) => {
 };
 
 function EmployeeTodo() {
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [task, setTask] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
   const [unreadMap, setUnreadMap] = useState({});
   //const userId = localStorage.getItem('userId');
   const {user} = useAuth();
   const navigate = useNavigate();
-  const [chatOpen, setChatOpen] = useState(false);
-  const [chatInput, setChatInput] = useState('');
-  const [chatResponse, setChatResponse] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [isDark, setIsDark] = useState(false); 
 
   // State for filters and search (assuming these are defined elsewhere or will be added)
@@ -94,6 +93,20 @@ function EmployeeTodo() {
 
   const handleLogout = () => {
     navigate('/UserLogin');
+  };
+
+  const handleSendMessageToGemini = async (prompt,history) => {
+      // Your existing logic to call the backend API
+        const payload = {
+        newPrompt: prompt,
+        history: history 
+    };
+    const res = await axios.post('http://localhost:8080/api/gemini/ask', payload);
+    return res.data;
+  };
+
+   const handleToggleChat = () => {
+    setIsChatOpen(prev => !prev);
   };
 
   // --- Filtering Logic ---
@@ -262,6 +275,21 @@ function EmployeeTodo() {
     <div className="min-h-screen p-5 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-50 transition-colors duration-300">
       <h1 className="text-4xl font-bold text-center mb-2 text-gray-900 dark:text-gray-50">Task Management</h1>
       <p className="text-lg text-center mb-8 text-gray-600 dark:text-gray-300">Manage and track tasks across your organization with intelligent workflow orchestration</p>
+
+      <button
+        onClick={handleToggleChat}
+        className="fixed bottom-6 right-6 bg-indigo-600 text-white rounded-full w-16 h-16 flex items-center justify-center text-2xl shadow-lg hover:bg-indigo-700 transition-transform hover:scale-110 z-50"
+      >
+        <MessageSquare size={28} />
+      </button>
+
+      {/* --- THE CHAT WINDOW COMPONENT --- */}
+      {/* It's always rendered, but its visibility is controlled internally by the `isOpen` prop */}
+      <ChatWindow 
+        isOpen={isChatOpen}
+        onToggle={handleToggleChat}
+        onSendMessage={handleSendMessageToGemini}
+      />
 
       <div className="flex flex-wrap justify-between items-center mb-5 gap-4">
         {/* View Toggle Buttons */}
@@ -460,54 +488,6 @@ function EmployeeTodo() {
         </div>
       )}
 
-      {/* Floating Chat Icon */}
-      <button
-        className="fixed bottom-6 right-6 bg-blue-500 text-white rounded-full w-14 h-14 flex items-center justify-center text-2xl shadow-lg hover:bg-blue-600 transition-colors duration-200 z-50"
-        onClick={() => setChatOpen(!chatOpen)}
-      >
-        💬
-      </button>
-
-      {/* Chat Window */}
-      {chatOpen && (
-        <div
-          className={`fixed bottom-24 right-6 w-80 h-[400px] p-4 rounded-lg shadow-xl flex flex-col z-50
-                      ${isDark ? 'bg-gray-900 text-gray-50' : 'bg-white text-gray-800'}`}
-        >
-          <h4 className="text-lg font-semibold mb-3">🤖 Ask Gemini</h4>
-          <textarea
-            placeholder="Type your prompt..."
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            className="flex-grow w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md mb-3 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-50"
-          />
-          <button
-            onClick={async () => {
-              try {
-                setIsLoading(true);
-                const res = await axios.post('http://localhost:8080/api/gemini/ask', {
-                  prompt: chatInput,
-                });
-                setChatResponse(res.data);
-              } catch (err) {
-                console.error('Chat failed', err);
-                setChatResponse("❌ Something went wrong");
-              } finally {
-                setIsLoading(false);
-              }
-            }}
-            className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isLoading}
-          >
-            {isLoading ? "Sending..." : "Send"}
-          </button>
-          {chatResponse && (
-            <div className="mt-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-md overflow-y-auto max-h-32 text-sm break-words">
-              <strong className="block mb-1 text-blue-600 dark:text-blue-400">Gemini:</strong> {chatResponse}
-            </div>
-          )}
-        </div>
-      )}
       {selectedTask && (
         <TaskComments
           task={selectedTask}
