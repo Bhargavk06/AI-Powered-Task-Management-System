@@ -1,141 +1,104 @@
-import {React,useState,useEffect} from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import SummaryPieChart from './SummaryPieChart'; // Adjust the import path as needed
+
+// Define theme-consistent colors for the charts
+const STATUS_COLORS = [
+  '#38bdf8', // Sky (To Do)
+  '#f59e0b', // Amber (In Progress)
+  '#10b981', // Emerald (Done)
+];
+
+// A helper function to process the raw data from the backend
+const processSummaryData = (rawData) => {
+  if (!Array.isArray(rawData) || rawData.length < 4) {
+    return [
+      { name: 'To Do', value: 0 },
+      { name: 'In Progress', value: 0 },
+      { name: 'Done', value: 0 },
+    ];
+  }
+  return [
+    { name: 'To Do', value: rawData[1] },
+    { name: 'In Progress', value: rawData[2] },
+    { name: 'Done', value: rawData[3] },
+  ];
+};
+
+
 function TaskSummarySection() {
-  // States:
-  const [totalSummary, setTotalSummary] = useState([]);
-  const [employeeSummary, setEmployeeSummary] = useState([]);
-  const [managerSummary, setManagerSummary] = useState([]);
-  const COLORS = ['#8884d8', '#82ca9d', '#ffc658']; // To Do, In Progress, Done
-  const pieData = [
-  { name: 'To Do', value: totalSummary[1] },
-  { name: 'In Progress', value: totalSummary[2] },
-  { name: 'Done', value: totalSummary[3] }
-];
+  const [summaryData, setSummaryData] = useState({
+    total: [],
+    employee: [],
+    manager: [],
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
-const pieDataEmployee = [
-  { name: 'To Do', value: employeeSummary[1] },
-  { name: 'In Progress', value: employeeSummary[2] },
-  { name: 'Done', value: employeeSummary[3] }
-];
+  useEffect(() => {
+    const fetchSummaries = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch all endpoints concurrently for better performance
+        const [totalRes, employeeRes, managerRes] = await Promise.all([
+          axios.get('http://localhost:8080/assigntask/totalSummary'),
+          axios.get('http://localhost:8080/assigntask/totalEmployeeSummary'),
+          axios.get('http://localhost:8080/assigntask/totalManagerSummary'),
+        ]);
 
-const pieDataManager = [
-  { name: 'To Do', value: managerSummary[1] },
-  { name: 'In Progress', value: managerSummary[2] },
-  { name: 'Done', value: managerSummary[3] }
-];
+        // Process and set all data at once
+        setSummaryData({
+          total: processSummaryData(totalRes.data),
+          employee: processSummaryData(employeeRes.data),
+          manager: processSummaryData(managerRes.data),
+        });
 
+      } catch (error) {
+        console.error("Error fetching task summaries:", error);
+        // In a real app, you might set an error state here
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  useEffect(()=>{
-    axios.get(`http://localhost:8080/assigntask/totalSummary`)
-    .then((response)=>{
-        console.log("Total summary response:", response.data);
-        setTotalSummary(response.data);
-    })
-    .catch((error)=>{
-        console.log("Error fetching total summary of tasks", error);
-    })
-
-    axios.get(`http://localhost:8080/assigntask/totalEmployeeSummary`)
-    .then((response)=>{
-      console.log("Total Employee summary response:", response.data);
-      setEmployeeSummary(response.data);
-    })
-    .catch((error)=>{
-      console.log("Total Employee Response:",error);
-    })
-
-    axios.get(`http://localhost:8080/assigntask/totalManagerSummary`)
-    .then((response)=>{
-      console.log("Total Manager summary response:", response.data);
-      setManagerSummary(response.data);
-    })
-    .catch((error)=>{
-      console.log("Total Manager Summary",error);
-    })
-
-  },[]);
+    fetchSummaries();
+  }, []);
 
   return (
-  <>
-    <h2>Overall Task Distribution</h2>
-    {totalSummary.length > 0 ? (
-      <ResponsiveContainer width="100%" height={300}>
-        <PieChart>
-          <Pie
-            data={pieData}
-            dataKey="value"
-            nameKey="name"
-            cx="50%"
-            cy="50%"
-            outerRadius={100}
-            label
-          >
-            {pieData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip />
-          <Legend />
-        </PieChart>
-      </ResponsiveContainer>
-    ) : (
-      <p>Loading task summary...</p>
-    )}
+    // Main container with consistent padding and background
+    <div className="w-full p-6 md:p-8">
+      <div className="flex flex-col space-y-6">
 
-    <h2>Employee Task Summary</h2>
-    {employeeSummary.length > 0 ? (
-      <ResponsiveContainer width="100%" height={300}>
-        <PieChart>
-          <Pie
-            data={pieDataEmployee}
-            dataKey="value"
-            nameKey="name"
-            cx="50%"
-            cy="50%"
-            outerRadius={100}
-            label
-          >
-            {pieDataEmployee.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip />
-          <Legend />
-        </PieChart>
-      </ResponsiveContainer>
-    ) : (
-      <p>Loading task summary...</p>
-    )}
+        {/* Welcome Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800">Task Summary</h1>
+          <p className="text-slate-500 mt-1">An overview of task distribution across the organization.</p>
+        </div>
 
-
-    <h2>Manager Task Summary</h2>
-    {managerSummary.length > 0 ? (
-      <ResponsiveContainer width="100%" height={300}>
-        <PieChart>
-          <Pie
-            data={pieDataManager}
-            dataKey="value"
-            nameKey="name"
-            cx="50%"
-            cy="50%"
-            outerRadius={100}
-            label
-          >
-            {pieDataManager.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip />
-          <Legend />
-        </PieChart>
-      </ResponsiveContainer>
-    ) : (
-      <p>Loading task summary...</p>
-    )}
-    
-  </>
-);
-
+        {/* Grid container for the summary charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <SummaryPieChart
+            title="Overall Task Distribution"
+            data={summaryData.total}
+            colors={STATUS_COLORS}
+            isLoading={isLoading}
+          />
+          <SummaryPieChart
+            title="Employee Task Summary"
+            data={summaryData.employee}
+            colors={STATUS_COLORS}
+            isLoading={isLoading}
+          />
+          <SummaryPieChart
+            title="Manager Task Summary"
+            data={summaryData.manager}
+            colors={STATUS_COLORS}
+            isLoading={isLoading}
+          />
+        </div>
+        
+      </div>
+    </div>
+  );
 }
+
 export default TaskSummarySection;

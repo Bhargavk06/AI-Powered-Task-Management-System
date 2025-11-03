@@ -147,6 +147,10 @@ module.exports = {
         'modal': '100',
         'tooltip': '110',
       },
+
+      backgroundImage: {
+        'subtle-pattern': "url('/src/background-pattern.svg')", // Adjust path if needed
+      }
     },
   },
  plugins: [

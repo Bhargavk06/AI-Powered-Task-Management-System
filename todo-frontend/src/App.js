@@ -29,6 +29,7 @@ import ManagerSection from './admin/ManagerSection';
 import ProjectSection from './projects/ProjectSection';
 import TaskRecommender from './admin/TaskRecommender'; 
 import AdminHome from './admin/HomeSection'; 
+import ManagerHome from './manager/HomeSection'; 
 import TaskSummarySection from './admin/TaskSummarySection'; 
 import AdminNotifications from './admin/NotificationsSection'; 
  // New component
@@ -38,7 +39,6 @@ import ProjectDetailsPage from './projects/ProjectDetailsPage';
 import ProjectTaskAssignment from './projects/ProjectTaskAssignment';
 import ManagerProjects from './manager/ManagerProjects';
 
-const ManagerHome = () => <h2>Welcome, Manager</h2>;
 
 function App() {
   return (
@@ -65,6 +65,7 @@ function App() {
                 <Route path="projects/:projectId" element={<ProjectDetailsPage />} />
                 <Route path="projects/:projectId/assign/:userId" element={<ProjectTaskAssignment />} />
                 <Route path="task-summary" element={<TaskSummarySection />} />
+                <Route path="task-recommender" element={<TaskRecommender />} />
               </Route>
               
               {/* --- ADMIN NESTED ROUTES (EXPANDED) --- */}

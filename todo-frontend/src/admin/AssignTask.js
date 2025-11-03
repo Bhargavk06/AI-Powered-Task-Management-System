@@ -5,7 +5,8 @@ import TaskComments from '../TaskComments';
 import TaskCard from '../TaskCard';
 import Icon from '../components/AppIcon';
 import { X, Type, AlignLeft, Calendar, Plus, ArrowLeft } from 'react-feather';
-
+// At the top of AssignTask.js
+import useConfirmationModal from '../components/useConfirmationModal'; // Adjust path if needed
 
 
 // Helper functions (keep these)
@@ -151,13 +152,24 @@ function AssignTask() {
     navigate(-1);
   };
   
-  const deleteTask = (taskId) => {
-    if (window.confirm("Are you sure you want to delete this task?")) {
-      axios.delete(`http://localhost:8080/assigntask/deleteTask/${taskId}`)
-        .then(() => setTasks(tasks.filter(task => task.taskId !== taskId)))
-        .catch((error) => console.error("Error deleting the task:", error));
-    }
-  };
+  const deleteTaskAction = (taskId) => {
+    return axios.delete(`http://localhost:8080/assigntask/deleteTask/${taskId}`)
+      .then(() => {
+        setTasks(currentTasks => currentTasks.filter(task => task.taskId !== taskId));
+      })
+      .catch((error) => {
+        console.error("Error deleting the task:", error);
+        alert("Failed to delete the task."); // Optional: show an error
+        throw error; // Propagate the error to the modal
+      });
+};
+
+const [askForDeleteConfirmation, DeleteConfirmationModal] = useConfirmationModal({
+    onConfirm: deleteTaskAction,
+    title: "Delete Task",
+    message: "Are you sure you want to delete this task? This cannot be undone.",
+    confirmText: "Delete",
+});
 
   const editTask = (taskToEdit) => {
    // const taskToEdit = tasks.find(task => task.taskId === taskId);
@@ -551,7 +563,7 @@ function AssignTask() {
                   task={task}
                   openCommentsModal={openCommentsModal}
                   onEdit={editTask}
-                  onDelete={deleteTask}
+                  onDelete={askForDeleteConfirmation}
                   unreadComments={unreadMap[task.taskId]}
                 />
               ))
@@ -577,7 +589,7 @@ function AssignTask() {
                       openCommentsModal={openCommentsModal}
                       unreadComments={unreadMap[t.taskId]}
                       onEdit={editTask}
-                      onDelete={deleteTask}
+                      onDelete={askForDeleteConfirmation}
                     />
                   ))
                 ) : (
@@ -632,6 +644,7 @@ function AssignTask() {
           }}
         />
       )}
+       <DeleteConfirmationModal />
     </div> // Closing div for the main component
   );
 }

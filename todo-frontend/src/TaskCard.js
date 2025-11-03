@@ -4,7 +4,6 @@ import Icon from './components/AppIcon';
 import Button from './components/ui/Button'; 
 import { useAuth } from './context/AuthContext';
 import FileList from './fileHandling/FileList';
-
 // You'll likely need an AppImage component or replace it with a simple <img> tag
 // For simplicity, I'm just using a placeholder <img> tag.
 const AppImage = ({ src, alt, className }) => (
@@ -330,11 +329,14 @@ const TaskCard = ({
           )}
             {/* FOR ADMIN: Show Delete button if onDelete is provided */}
            {canModify && onDelete && (
-            <Button variant="ghost" size="sm" onClick={() => onDelete(task.taskId)}
-              className="text-red-600 hover:text-red-700 hover:bg-red-50">
-              <Icon name="Trash2" size={14} />
-            </Button>
-          )}
+    <Button variant="ghost" size="sm" onClick={(e) => {
+      e.stopPropagation();     // Prevent other clicks
+      onDelete(task.taskId); // Call the parent's function with ONLY the ID
+    }} // <-- CORRECTED LINE
+      className="text-red-600 hover:text-red-700 hover:bg-red-50">
+      <Icon name="Trash2" size={14} />
+    </Button>
+)}
           </div>
         </div>
       </div>

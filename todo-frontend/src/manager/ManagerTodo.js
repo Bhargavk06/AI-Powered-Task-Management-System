@@ -8,13 +8,11 @@ function ManagerTodo() {
   const { user } = useAuth();
   return (
    <NotificationProvider userId={user?.userId}>
-      <div style={styles.wrapper}>
-        <div>
+      <div className="flex h-screen bg-white antialiased">
           <ManagerDashboard />
-        </div>
-        <div style={styles.mainContent}>
-          <Outlet />
-        </div>
+        <main className="flex-1 overflow-y-auto bg-slate-100">
+                  <Outlet />
+                </main>
       </div>
     </NotificationProvider>
   );

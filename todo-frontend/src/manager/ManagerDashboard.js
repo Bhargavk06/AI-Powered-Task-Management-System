@@ -1,81 +1,107 @@
 import React from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, NavLink } from 'react-router-dom';
+import {
+  Home,
+  Users,
+  Cpu,
+  Bell,
+  Clipboard,
+  BarChart2,
+  Settings,
+  LogOut
+} from 'react-feather'; // Icons for the manager's view
 
 function ManagerDashboard() {
   const navigate = useNavigate();
 
-  // STYLES OBJECT -- NOW WITH 'nav' and 'logout'
-  const styles = {
-    sidebar: {
-      width: '250px',
-      height: '100vh',
-      backgroundColor: '#2c3e50',
-      color: 'white',
-      display: 'flex',
-      flexDirection: 'column',
-      padding: '0',
-      fontFamily: 'Arial, sans-serif',
-      position: 'sticky',
-      top: 0,
-    },
-    title: {
-      textAlign: 'center',
-      paddingTop: '10px',
-      fontSize: '28px',
-      fontWeight: 'bold',
-    },
-    header: {
-      textAlign: 'center',
-      padding: '20px 0',
-      fontSize: '22px',
-      borderBottom: '1px solid #34495e',
-    },
-    link: {
-      padding: '15px 20px',
-      color: 'white',
-      textDecoration: 'none',
-      borderBottom: '1px solid #34495e',
-      transition: 'background-color 0.3s',
-      cursor: 'pointer',
-      display: 'block', // To make the entire area clickable
-    },
-    logoutButton: {
-      padding: '15px 20px',
-      color: 'white',
-      textDecoration: 'none',
-      borderBottom: '1px solid #34495e',
-      transition: 'background-color 0.3s',
-      cursor: 'pointer',
-      backgroundColor: 'transparent',
-      border: 'none',
-      textAlign: 'left',
-      width: '100%',
-      fontSize: '16px', // Match link font size
-      fontFamily: 'Arial, sans-serif', // Match link font family
-    }
-  };
-
   const handleLogout = () => {
     navigate('/UserLogin');
-  }
+  };
+
+  // --- Style definitions for NavLink (consistent with the AdminDashboard) ---
+  const baseLinkClass = "flex items-center space-x-3 rounded-md px-3 py-2 text-slate-600 transition-colors duration-200";
+  const activeLinkClass = "bg-emerald-50 text-emerald-700 font-semibold";
+  const inactiveLinkClass = "hover:bg-slate-100 hover:text-slate-900";
+
+  // This function is passed to NavLink to conditionally apply classes.
+  const getLinkClass = ({ isActive }) =>
+    `${baseLinkClass} ${isActive ? activeLinkClass : inactiveLinkClass}`;
 
   return (
-    <div style={styles.sidebar}>
-      <div style={styles.title}>ACM</div>
-      <div style={styles.header}>Manager Dashboard</div>
+    // Sidebar container - identical styling to the AdminDashboard
+    <aside className="w-64 h-screen bg-white flex flex-col sticky top-0 border-r border-slate-200">
 
-      {/* This JSX will now work correctly */}
-      <nav style={styles.nav}>
-        <Link to="/manager" style={styles.link}>Home</Link>
-        <Link to="/manager/employees" style={styles.link}>Employees</Link>
-        <Link to="/manager/tasks" style={styles.link}>Task List</Link>
-        <Link to="/manager/projects" style={styles.link}>Projects</Link>
-        <Link to="/manager/task-summary" style={styles.link}>Task Summary</Link>
-        
-        <button style={styles.logoutButton} onClick={handleLogout}>Logout</button>
+      {/* Branding / Logo Section */}
+      <div className="p-4 border-b border-slate-200">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
+            {/* You can replace 'T' with your app's initial or a small SVG logo */}
+            <span className="text-xl font-bold text-white">T</span>
+          </div>
+          <h1 className="text-lg font-bold text-slate-800">Manager Panel</h1>
+        </div>
+      </div>
+
+      {/* Main Navigation Links */}
+      <nav className="flex-1 p-4 flex flex-col space-y-1">
+        {/* Use NavLink with the 'end' prop for the home link to ensure it's not always active */}
+        <NavLink to="/manager" className={getLinkClass} end>
+          <Home size={20} />
+          <span>Home</span>
+        </NavLink>
+        <NavLink to="/manager/employees" className={getLinkClass}>
+          <Users size={20} />
+          <span>Employees</span>
+        </NavLink>
+        <NavLink to="/manager/tasks" className={getLinkClass}>
+          <Clipboard size={20} />
+          <span>Task List</span>
+        </NavLink>
+        <NavLink to="/manager/projects" className={getLinkClass}>
+          <Cpu size={20} />
+          <span>Projects</span>
+        </NavLink>
+        {/* A subtle separator and heading for a new group */}
+        <div className="pt-4 pb-2 px-3">
+          <span className="text-xs font-semibold text-slate-400 uppercase">Tools & Reports</span>
+        </div>
+
+        <NavLink to="/manager/task-recommender" className={getLinkClass}>
+          <BarChart2 size={20} />
+          <span>Recommender</span>
+        </NavLink>
+        <NavLink to="/manager/task-summary" className={getLinkClass}>
+          <BarChart2 size={20} />
+          <span>Summary</span>
+        </NavLink>
+        <NavLink to="/manager/notifications" className={getLinkClass}>
+          <Bell size={20} />
+          <span>Notifications</span>
+        </NavLink>
       </nav>
-    </div>
+
+      {/* 3. User / Logout Section at the bottom */}
+      <div className="p-4 border-t border-slate-200">
+        <div className="flex flex-col space-y-1">
+          {/* You can add a link to a user profile page here */}
+          <a href="#settings" className={`${baseLinkClass} ${inactiveLinkClass}`}>
+            <Settings size={20} />
+            <span>Settings</span>
+          </a>
+          <button
+            onClick={handleLogout}
+            className={`${baseLinkClass} w-full ${inactiveLinkClass}`}
+          >
+            <LogOut size={20} />
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+
+    </aside>
   );
 }
+
+// The old 'styles' object is completely gone.
 
 export default ManagerDashboard;

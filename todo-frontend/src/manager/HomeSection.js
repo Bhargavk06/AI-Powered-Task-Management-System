@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Users, Briefcase, Folder, CheckSquare } from 'react-feather'; // Import icons
-
+import { useParams} from 'react-router-dom';
 // A reusable StatCard component for a clean and scalable dashboard
 const StatCard = ({ icon, title, value, isLoading, color = 'emerald' }) => {
   const Icon = icon;
@@ -49,24 +49,25 @@ function HomeSection() {
     taskCount: 0,    // Added for future expansion
   });
   const [isLoading, setIsLoading] = useState(true);
+  const userId = localStorage.getItem('userId');
 
   useEffect(() => {
     // Use Promise.all to fetch all data concurrently for better performance
     const fetchAllStats = async () => {
       setIsLoading(true);
       try {
-        const [employeesRes, managersRes, projectsRes] = await Promise.all([
-          axios.get('http://localhost:8080/profile/employees'),
-          axios.get('http://localhost:8080/profile/managers'),
-          // You can add more API calls here in the future
-          axios.get('http://localhost:8080/projects'),
-          // axios.get('http://localhost:8080/tasks')
+        const [employeesRes, managersRes, projectsRes, tasksRes] = await Promise.all([
+          axios.get(`http://localhost:8080/profile/employees`),
+          axios.get(`http://localhost:8080/profile/managers`),
+          axios.get(`http://localhost:8080/projects/user/${userId}`),
+          axios.get(`http://localhost:8080/assigntask/getincompletetask/${userId}`)
         ]);
 
         setStats({
           employeeCount: Array.isArray(employeesRes.data) ? employeesRes.data.length : 0,
           managerCount: Array.isArray(managersRes.data) ? managersRes.data.length : 0,
           projectCount: Array.isArray(projectsRes.data) ? projectsRes.data.length : 0,
+          taskCount: Array.isArray(tasksRes.data) ? tasksRes.data.length : 0,
         });
 
       } catch (error) {
@@ -77,7 +78,7 @@ function HomeSection() {
     };
 
     fetchAllStats();
-  }, []); // Runs once when component mounts
+  }, [userId]); // Runs once when component mounts
 
   return (
     // Main container with consistent padding and background
@@ -93,25 +94,33 @@ function HomeSection() {
         {/* Grid container for the stat cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
-            title="Total Managers"
-            value={stats.managerCount}
-            icon={Briefcase}
-            isLoading={isLoading}
-            color="amber"
-          />
-          <StatCard
             title="Total Employees"
             value={stats.employeeCount}
             icon={Users}
             isLoading={isLoading}
             color="sky"
           />
+          <StatCard
+            title="Total Managers"
+            value={stats.managerCount}
+            icon={Briefcase}
+            isLoading={isLoading}
+            color="amber"
+          />
+          {/* Example of how easily you can add more cards */}
            <StatCard
             title="Active Projects"
             value={stats.projectCount} // Replace with real data when ready
             icon={Folder}
             isLoading={isLoading}
             color="emerald"
+          />
+           <StatCard
+            title="Pending Tasks"
+            value={stats.taskCount} // Replace with real data when ready
+            icon={CheckSquare}
+            isLoading={isLoading}
+            color="violet"
           />
         </div>
 
