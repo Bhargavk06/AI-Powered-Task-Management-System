@@ -48,7 +48,7 @@ public class TaskCommentsService {
             status.setRead(false);
             commentReadStatusRepo.save(status);
 
-            // 🔔 Send WebSocket comment notification
+            //  Send WebSocket comment notification
             Optional<AssignedTask> taskOpt = assignedTaskRepo.findById(comment.getTaskId());
             if (taskOpt.isPresent()) {
                 AssignedTask task = taskOpt.get();

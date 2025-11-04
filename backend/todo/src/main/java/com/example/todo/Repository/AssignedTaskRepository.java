@@ -8,11 +8,16 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.example.todo.AssignedTask;
+import com.example.todo.ProjectEntity;
 import com.example.todo.UserAuthentication;
 
 @Repository
 public interface AssignedTaskRepository extends JpaRepository<AssignedTask,Long> {
 	List<AssignedTask> findByAssigneeId(String assigneeId);
+	List<AssignedTask> findByAssigneeIdAndStatusIn(String assigneeId, List<String> statuses);
+	List<AssignedTask> findByProjectIdAndAssigneeId(Long projectId, String assigneeId);
+	List<AssignedTask> findTasksByProject(ProjectEntity project);
+	List<AssignedTask> findByAssignee(UserAuthentication user);
 	
 	int countByStatus(String status);
 	

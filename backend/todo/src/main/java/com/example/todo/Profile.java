@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public class Profile {
 
     @Id
-    private String id;  // Shared userId
+    private String id;  
 
     private String email;
     private String phone;
@@ -19,7 +19,6 @@ public class Profile {
     @JsonIgnore
     private UserAuthentication user;
 
-    // Getters and setters
     public String getId() {
         return id;
     }

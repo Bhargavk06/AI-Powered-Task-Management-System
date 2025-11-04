@@ -16,7 +16,7 @@ public class NotificationController {
     @Autowired
     private NotificationService notificationService;
 
-    // ✅ Get all notifications for a user (Admin, Manager, or Employee)
+    
     @GetMapping("/user/{userId}")
     public List<Notifications> getNotificationsByUserId(@PathVariable String userId) {
         return notificationService.getUserNotifications(userId);

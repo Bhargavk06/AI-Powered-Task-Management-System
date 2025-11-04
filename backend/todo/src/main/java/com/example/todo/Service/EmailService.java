@@ -12,13 +12,19 @@ public class EmailService {
     private JavaMailSender mailSender;
 
     public void sendEmail(String toEmail, String subject, String body) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        // ✅ DO NOT setFrom() manually — uses spring.mail.username
-        message.setTo(toEmail);
-        message.setSubject(subject);
-        message.setText(body);
+    	try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom("meliora945@gmail.com"); // Must be the same as your configured username
+            message.setTo(toEmail);
+            message.setSubject(subject);
+            message.setText(body);
 
-        mailSender.send(message);
+            mailSender.send(message);
+            System.out.println("Mail sent successfully to " + toEmail);
+        } catch (Exception e) {
+            System.err.println("Error while sending mail: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
 

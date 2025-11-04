@@ -13,13 +13,17 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.todo.UserAuthentication;
+import com.example.todo.Repository.UserRepository;
 import com.example.todo.Service.UserService;
+import com.example.todo.dto.UserLoginRequest;
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/user")
 public class UserController {
 	@Autowired
 	private UserService userservice;
+	@Autowired
+	private UserRepository userRepository;
 	
 	
 	@PostMapping("/register")
@@ -29,15 +33,36 @@ public class UserController {
 		return "Registered successfully";
 	}
 
-	@PostMapping("/login")
-	public String getDetails(@RequestBody UserAuthentication user) {
-		boolean success=userservice.verifyUser(user.getId(),user.getPassword(),user.getRole());
-		if(success) {
-			return "Login successful";
-		}
-		else {
-			return "Invalid Credentials";
-		}
+	 @PostMapping("/login")
+	    public ResponseEntity<?> loginUser(@RequestBody UserLoginRequest loginRequest) {
+	        // You probably have a service method that checks credentials
+	        // and returns the authenticated user or throws an exception.
+	        try {
+	            UserAuthentication authenticatedUser = userservice.verifyUser(
+	                loginRequest.getId(),
+	                loginRequest.getPassword(),
+	                loginRequest.getRole()
+	            );
+	            
+	            // IF a user is found and password matches:
+	            // Instead of returning a string...
+	            // return ResponseEntity.ok("Login successful");
+	            
+	            // ...RETURN THE FULL USER OBJECT.
+	            // Jackson will automatically convert this to JSON, excluding the password
+	            // if you have @JsonIgnore on the password field in your entity.
+	            return ResponseEntity.ok(authenticatedUser);
+
+	        } catch (RuntimeException e) {
+	            // If authentication fails (user not found, password mismatch),
+	            // return a proper error response.
+	            return ResponseEntity.badRequest().body("Login failed. Invalid credentials.");
+	        }
+	    }
+	
+	@GetMapping("/all")
+	public ResponseEntity<List<UserAuthentication>> getAllUsers() {
+	    return ResponseEntity.ok(userRepository.findAll());
 	}
 	
 	

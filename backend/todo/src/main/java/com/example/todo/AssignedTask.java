@@ -1,5 +1,7 @@
 package com.example.todo;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.*;
@@ -8,13 +10,14 @@ import jakarta.persistence.*;
 public class AssignedTask {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO) // Works with Oracle too
+    @GeneratedValue(strategy = GenerationType.AUTO) 
     private Long taskId;
 
     private String taskname;
     private String description;
     private String status;
     private String deadline;
+    private String priority;
 
     @ManyToOne
     @JoinColumn(name = "assignee_id", referencedColumnName = "id")
@@ -25,6 +28,22 @@ public class AssignedTask {
     @JoinColumn(name = "assigned_by_id", referencedColumnName = "id")
     @JsonIgnore
     private UserAuthentication assignedBy;
+    
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<FileEntity> files;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id") // This will create a 'project_id' foreign key column
+    @JsonIgnore
+    private ProjectEntity project;
+    
+    public ProjectEntity getProject() {
+        return project;
+    }
+
+    public void setProject(ProjectEntity project) {
+        this.project = project;
+    }
 
     public UserAuthentication getAssignedBy() {
         return assignedBy;
@@ -35,7 +54,6 @@ public class AssignedTask {
     }
 
 
-    // Getters and Setters
     public Long getTaskId() {
         return taskId;
     }
@@ -82,5 +100,13 @@ public class AssignedTask {
 
     public void setAssignee(UserAuthentication assignee) {
         this.assignee = assignee;
+    }
+    
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
     }
 }

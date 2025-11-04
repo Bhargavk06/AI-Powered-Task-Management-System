@@ -11,14 +11,11 @@ public class Notifications {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String senderId;     // Who sent the notification
-    private String receiverId;   // Who should receive it
-
-    private String message;      // Notification content
-
-    private boolean read = false; // Read/unread status
-
-    private LocalDateTime timestamp; // Time when it was created
+    private String senderId;     
+    private String receiverId;  
+    private String message;     
+    private boolean read = false; 
+    private LocalDateTime timestamp; 
 
     public Notifications() {
         this.timestamp = LocalDateTime.now();
@@ -32,7 +29,7 @@ public class Notifications {
         this.timestamp = LocalDateTime.now();
     }
 
-    // Getters and setters 👇
+    
 
     public Long getId() {
         return id;
