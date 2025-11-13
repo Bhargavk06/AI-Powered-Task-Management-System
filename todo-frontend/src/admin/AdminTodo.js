@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import AdminDashboard from './AdminDashboard';
-import { NotificationProvider } from '../NotificationProvider';
+import { NotificationProvider } from '../notifications/NotificationProvider';
 import { useAuth } from '../context/AuthContext';
 
 function AdminTodo() {

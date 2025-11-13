@@ -4,10 +4,11 @@ import TaskComments from './TaskComments';
 import { useNavigate } from 'react-router-dom';
 import TaskCard from './TaskCard';
 import Icon from './components/AppIcon';
-import Button from './components/ui/Button';
+import Button from './components/Button';
 import { useAuth } from './context/AuthContext';
 import ChatWindow from './ChatWindow'; 
-import { MessageSquare } from 'react-feather'; 
+import { MessageSquare, Bell, X, Mail, CheckCircle } from 'react-feather'; 
+import { useNotifications } from './notifications/NotificationProvider'; 
 
 // Helper functions (keep these)
 const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
@@ -26,7 +27,50 @@ const calculateDaysOverdue = (deadline) => {
   return 0;
 };
 
+// --- Notification Item Component (for use inside the modal) ---
+const NotificationItem = ({ notification, onMarkAsRead }) => {
+  const formatTime = (timestamp) => {
+    if (!timestamp) return '';
+    return new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(timestamp));
+  };
+
+  const handleClick = () => {
+    if (!notification.isRead) {
+      onMarkAsRead(notification.id);
+    }
+  };
+
+   return (
+    <li 
+      onClick={handleClick} 
+      className={`p-4 flex items-start space-x-4 transition-colors ${!notification.isRead ? 'bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 cursor-pointer' : 'bg-white dark:bg-gray-800'}`}
+    >
+      <div className="flex-shrink-0 mt-0.5">
+        <span className={`h-8 w-8 rounded-full flex items-center justify-center ${!notification.isRead ? 'bg-indigo-500' : 'bg-gray-400'}`}>
+          <Mail className="h-4 w-4 text-white" />
+        </span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-gray-800 dark:text-gray-200">{notification.message}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{formatTime(notification.timestamp)}</p>
+      </div>
+      {!notification.isRead && (
+        <div className="flex-shrink-0 mt-1">
+          <span className="h-2.5 w-2.5 rounded-full bg-indigo-500" aria-hidden="true" title="Unread"></span>
+        </div>
+      )}
+    </li>
+  );
+};
+
 function EmployeeTodo() {
+   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+   const { 
+    notifications, 
+    unreadCount, 
+    markOneAsRead, 
+    markAllAsRead 
+  } = useNotifications();
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [task, setTask] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -175,7 +219,12 @@ function EmployeeTodo() {
     return acc;
   }, {});
 
-  const statusColumns = ['To Do', 'In Progress', 'Done'];
+const statusColumns = [
+    { title: 'To Do', color: 'bg-gray-100 dark:bg-gray-800' },
+    { title: 'In Progress', color: 'bg-blue-100 dark:bg-blue-900' },
+    { title: 'In Review', color: 'bg-yellow-100 dark:bg-yellow-900' },
+    { title: 'Done', color: 'bg-green-100 dark:bg-green-900' }
+  ];
 
   const getPriorityColorKanban = (priority) => {
     switch (priority?.toLowerCase()) {
@@ -274,6 +323,9 @@ function EmployeeTodo() {
   return (
     <div className="min-h-screen p-5 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-50 transition-colors duration-300">
       <h1 className="text-4xl font-bold text-center mb-2 text-gray-900 dark:text-gray-50">Task Management</h1>
+       <h2 className="text-2xl font-semibold text-center text-gray-700 dark:text-gray-300 mb-6">
+        Welcome, {user?.username} 
+      </h2>
       <p className="text-lg text-center mb-8 text-gray-600 dark:text-gray-300">Manage and track tasks across your organization with intelligent workflow orchestration</p>
 
       <button
@@ -332,6 +384,20 @@ function EmployeeTodo() {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-50 text-sm w-48 transition-all duration-300 focus:ring-blue-500 focus:border-blue-500"
           />
+           {/* THIS BUTTON WAS ADDED */}
+          <Button
+            onClick={() => setIsNotificationsOpen(true)}
+            variant="ghost"
+            size="sm"
+            className="ml-2 text-gray-700 dark:text-gray-50 hover:bg-gray-100 dark:hover:bg-gray-700 relative"
+          >
+            <Icon name="Bell" size={20} />
+            {unreadCount > 0 && (
+              <span className="absolute top-0 right-0 -mt-1 -mr-1 h-4 w-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
+          </Button>
           <Button
             onClick={() => setIsDark(!isDark)}
             variant="ghost"
@@ -431,15 +497,20 @@ function EmployeeTodo() {
   )}
 
       {viewMode === 'kanban' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
-          {statusColumns.map(status => (
-            <div key={status} className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 min-h-[300px] flex flex-col shadow-sm">
-              <h4 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-50 text-center">
-                {status} ({tasksByStatus[status]?.length || 0})
-              </h4>
-              <div className="flex-grow flex flex-col gap-3 min-h-[50px]">
-                {tasksByStatus[status] && tasksByStatus[status].length > 0 ? (
-                  tasksByStatus[status].map(t => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* We now map over the array of objects */}
+          {statusColumns.map((column) => (
+            // Only render columns that have tasks or are part of the main workflow
+            (tasksByStatus[column.title] || ['To Do', 'In Progress', 'In Review'].includes(column.title)) && (
+              // Use the dynamic color class from our object
+              <div key={column.title} className={`${column.color} rounded-lg p-4 flex flex-col shadow-sm`}>
+                <h4 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-50 text-center">
+                  {/* Use the title and calculate the count */}
+                  {column.title} ({tasksByStatus[column.title]?.length || 0})
+                </h4>
+                <div className="flex-grow flex flex-col gap-4 min-h-[200px]">
+                  {/* Get the tasks for this specific column */}
+                  {tasksByStatus[column.title]?.map(t => (
                     <TaskCard
                       key={t.taskId}
                       task={t}
@@ -448,12 +519,10 @@ function EmployeeTodo() {
                       openCommentsModal={openCommentsModal}
                       unreadComments={unreadMap[t.taskId]}
                     />
-                  ))
-                ) : (
-                  <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-5">No tasks in this column.</p>
-                )}
+                  ))}
+                </div>
               </div>
-            </div>
+            )
           ))}
         </div>
       )}
@@ -498,8 +567,62 @@ function EmployeeTodo() {
           }}
         />
       )}
+
+       {isNotificationsOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[100]">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-50">Notifications</h2>
+              <div className="flex items-center gap-4">
+                {unreadCount > 0 && (
+                   <button 
+                    onClick={markAllAsRead} 
+                    className="flex items-center px-3 py-1 text-xs font-medium text-indigo-600 bg-indigo-100 rounded-md hover:bg-indigo-200 transition-colors"
+                  >
+                    <CheckCircle size={14} className="mr-1" />
+                    Mark All as Read
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsNotificationsOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-grow overflow-y-auto">
+              {notifications.length > 0 ? (
+                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {notifications.map(notification => (
+                    <NotificationItem 
+                      key={notification.id} 
+                      notification={notification}
+                      onMarkAsRead={markOneAsRead}
+                    />
+                  ))}
+                </ul>
+              ) : (
+                <div className="text-center py-20">
+                  <Bell className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-gray-50">
+                    No notifications yet
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    We'll notify you here about important updates.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export default EmployeeTodo;
+

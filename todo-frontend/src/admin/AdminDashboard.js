@@ -10,9 +10,11 @@ import {
   LogOut,
   Settings // Example for a future settings link
 } from 'react-feather';
+import { useNotifications } from '../notifications/NotificationProvider'; 
 
 function AdminDashboard() {
   const navigate = useNavigate();
+  const { unreadCount } = useNotifications();
 
   const handleLogout = () => {
     navigate('/UserLogin');
@@ -36,7 +38,7 @@ function AdminDashboard() {
           <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
             <span className="text-xl font-bold text-white">T</span> {/* Replace with your logo/initial */}
           </div>
-          <h1 className="text-lg font-bold text-slate-800">Task Platform</h1>
+          <h1 className="text-lg font-bold text-slate-800">Admin Panel</h1>
         </div>
       </div>
 
@@ -72,9 +74,14 @@ function AdminDashboard() {
           <BarChart2 size={20} />
           <span>Summary</span>
         </NavLink>
-        <NavLink to="/admin/notifications" className={getLinkClass}>
+         <NavLink to="/admin/notifications" className={getLinkClass}>
           <Bell size={20} />
-          <span>Notifications</span>
+          <span className="flex-1">Notifications</span>
+          {unreadCount > 0 && (
+            <span className="ml-auto bg-emerald-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+              {unreadCount}
+            </span>
+          )}
         </NavLink>
       </nav>
 

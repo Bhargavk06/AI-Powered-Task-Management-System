@@ -10,9 +10,11 @@ import {
   Settings,
   LogOut
 } from 'react-feather'; // Icons for the manager's view
+import { useNotifications } from '../notifications/NotificationProvider'; 
 
 function ManagerDashboard() {
   const navigate = useNavigate();
+  const { unreadCount } = useNotifications();
 
   const handleLogout = () => {
     navigate('/UserLogin');
@@ -75,8 +77,13 @@ function ManagerDashboard() {
           <span>Summary</span>
         </NavLink>
         <NavLink to="/manager/notifications" className={getLinkClass}>
-          <Bell size={20} />
-          <span>Notifications</span>
+         <Bell size={20} />
+                   <span className="flex-1">Notifications</span>
+                   {unreadCount > 0 && (
+                     <span className="ml-auto bg-emerald-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                       {unreadCount}
+                     </span>
+                   )}
         </NavLink>
       </nav>
 

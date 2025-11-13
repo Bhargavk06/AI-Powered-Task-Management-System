@@ -3,11 +3,11 @@ import axios from 'axios';
 import TaskComments from '../TaskComments'; 
 import TaskCard from '.././TaskCard'; 
 import Icon from '.././components/AppIcon'; 
-import Button from '../components/ui/Button'; 
+import Button from '../components/Button'; 
 import { useAuth } from '../context/AuthContext';
 import ChatWindow from '../ChatWindow'; 
 import { MessageSquare } from 'react-feather'; 
-
+import useConfirmationModal from '../components/useConfirmationModal';
 
 function ManagerTasks() {
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -58,20 +58,46 @@ function ManagerTasks() {
   // This function is for changing a task's *own* status as a manager.
   // The TaskCard already has an onStatusChange prop that will handle this
   // Inside ManagerTasks.js
- const handleStatusChange = async (taskId, newStatus) => {
-    try {
-      await axios.put('http://localhost:8080/assigntask/updateStatus', {
-        taskId: taskId,
-        status: newStatus
+ const statusChangeAction = ({ taskId, newStatus }) => {
+    if (!user || !user.userId) {
+        console.error("Cannot update status: logged in user not found.");
+        return Promise.reject("User not found"); // Return a rejected promise
+    }
+
+    return axios.put(`http://localhost:8080/assigntask/updateStatus?updatedByUserId=${user.userId}`, { 
+        taskId, 
+        status: newStatus 
+    })
+      .then(() => {
+        setTasks(prev => prev.map(t => t.taskId === taskId ? { ...t, status: newStatus } : t));
+      })
+      .catch(error => {
+        console.error("Failed to update status", error);
+        alert("Failed to update status.");
+        throw error; 
       });
-      setTasks(prev =>
-        prev.map(t => t.taskId === taskId ? { ...t, status: newStatus } : t)
-      );
-      // alert("Status updated!");
-    } catch (error) {
-      console.error("Failed to update status", error);
+  };
+
+  // 2. Set up the confirmation hook, telling it to use our core action function.
+  const [askForReviewConfirmation, ReviewConfirmationModal] = useConfirmationModal({
+    onConfirm: statusChangeAction,
+    title: "Submit for Review",
+    message: "Are you sure you want to submit this task? You won't be able to change its status again until it is approved or rejected.",
+    confirmText: "Submit",
+  });
+
+  // 3. This is the SINGLE, "smart" handler that gets passed to the TaskCard.
+  //    It decides whether to show the modal or call the action directly.
+  const handleStatusChange = (taskId, newStatus) => {
+    if (newStatus === 'In Review') {
+      // If sending for review, trigger the confirmation modal.
+      askForReviewConfirmation({ taskId, newStatus });
+    } else {
+      // For any other status change (e.g., "In Progress" -> "To Do"), just do it.
+      statusChangeAction({ taskId, newStatus });
     }
   };
+
 
 const openCommentsModal = async (task) => {
     if (!user || !user.userId) return;
@@ -204,7 +230,12 @@ const openCommentsModal = async (task) => {
     return acc;
   }, {});
 
-  const statusColumns = ['To Do', 'In Progress', 'Done'];
+ const statusColumns = [
+    { title: 'To Do', color: 'bg-gray-100 dark:bg-gray-800' },
+    { title: 'In Progress', color: 'bg-blue-100 dark:bg-blue-900' },
+    { title: 'In Review', color: 'bg-yellow-100 dark:bg-yellow-900' },
+    { title: 'Done', color: 'bg-green-100 dark:bg-green-900' }
+  ];
 
   const getPriorityColorKanban = (priority) => {
     switch (priority?.toLowerCase()) {
@@ -463,16 +494,16 @@ const openCommentsModal = async (task) => {
         </div>
       )}
 
-      {viewMode === 'kanban' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 mt-4">
-          {statusColumns.map(status => (
-            <div key={status} className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 min-h-[300px] flex flex-col shadow-sm">
-              <h4 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-50 text-center">
-                {status} ({tasksByStatus[status]?.length || 0})
-              </h4>
-              <div className="flex-grow flex flex-col gap-3 min-h-[50px]">
-                {tasksByStatus[status] && tasksByStatus[status].length > 0 ? (
-                  tasksByStatus[status].map(t => (
+       {viewMode === 'kanban' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
+          {statusColumns.map((column) => (
+            (tasksByStatus[column.title] || ['To Do', 'In Progress', 'In Review'].includes(column.title)) && (
+              <div key={column.title} className={`${column.color} rounded-lg p-4 flex flex-col shadow-sm`}>
+                <h4 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-50 text-center">
+                  {column.title} ({tasksByStatus[column.title]?.length || 0})
+                </h4>
+                <div className="flex-grow flex flex-col gap-4 min-h-[200px]">
+                  {tasksByStatus[column.title]?.map(t => (
                     <TaskCard
                       key={t.taskId}
                       task={t}
@@ -481,12 +512,10 @@ const openCommentsModal = async (task) => {
                       openCommentsModal={() => openCommentsModal(t)}
                       unreadComments={unreadMap[t.taskId]}
                     />
-                  ))
-                ) : (
-                  <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-5">No tasks in this column.</p>
-                )}
+                  ))}
+                </div>
               </div>
-            </div>
+            )
           ))}
         </div>
       )}
@@ -528,6 +557,7 @@ const openCommentsModal = async (task) => {
       onClose={() => setSelectedTaskForComments(null)}
     />
 )}
+<ReviewConfirmationModal />
     </div>
   );
 }

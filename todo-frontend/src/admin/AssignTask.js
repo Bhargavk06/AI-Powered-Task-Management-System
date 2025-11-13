@@ -60,6 +60,13 @@ function AssignTask() {
 
   const [selectedTask, setSelectedTask] = useState(null); //  Track selected task for viewing comments
 
+  const statusColumns = [
+    { title: 'To Do', color: 'bg-gray-100 dark:bg-gray-800' },
+    { title: 'In Progress', color: 'bg-blue-100 dark:bg-blue-900' },
+    { title: 'In Review', color: 'bg-yellow-100 dark:bg-yellow-900' },
+    { title: 'Done', color: 'bg-green-100 dark:bg-green-900' }
+  ];
+
   const fetchData = () => {
     axios.get(`http://localhost:8080/assigntask/gettask/${id}`)
       .then((response) => setTasks(response.data))
@@ -132,20 +139,25 @@ function AssignTask() {
       });
   };
 
-    const handleStatusChange = async (taskId, newStatus) => {
-    try {
-      await axios.put('http://localhost:8080/assigntask/updateStatus', {
-        taskId: taskId,
-        status: newStatus
-      });
-      setTasks(prev =>
-        prev.map(t => t.taskId === taskId ? { ...t, status: newStatus } : t)
-      );
-      // alert("Status updated!");
-    } catch (error) {
-      console.error("Failed to update status", error);
-    }
-  };
+   const handleStatusChange = async (taskId, newStatus) => {
+        if (!userId) {
+            console.error("Cannot update status: logged in user not found.");
+            return;
+        }
+        
+        try {
+            // --- THIS IS THE FIX ---
+            // Add the 'updatedByUserId' to the URL here as well
+            await axios.put(`http://localhost:8080/assigntask/updateStatus?updatedByUserId=${userId}`, {
+                taskId: taskId,
+                status: newStatus
+            });
+            
+            fetchData(); // Re-fetch data to show the change
+        } catch (error) {
+            console.error("Failed to update status", error);
+        }
+    };
 
 
  const handleBack = () => {
@@ -267,7 +279,6 @@ const [askForDeleteConfirmation, DeleteConfirmationModal] = useConfirmationModal
     return acc;
   }, {});
 
-  const statusColumns = ['To Do', 'In Progress', 'Done'];
 
   // --- Calendar Logic ---
   const getPriorityDotColor = (priority) => {
@@ -562,6 +573,7 @@ const [askForDeleteConfirmation, DeleteConfirmationModal] = useConfirmationModal
                   key={task.taskId}
                   task={task}
                   openCommentsModal={openCommentsModal}
+                  onStatusChange={handleStatusChange}
                   onEdit={editTask}
                   onDelete={askForDeleteConfirmation}
                   unreadComments={unreadMap[task.taskId]}
@@ -573,30 +585,29 @@ const [askForDeleteConfirmation, DeleteConfirmationModal] = useConfirmationModal
         </div>
       )}
 
-      {viewMode === 'kanban' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 mt-4">
-          {statusColumns.map(status => (
-            <div key={status} className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 min-h-[300px] flex flex-col shadow-sm">
-              <h4 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-50 text-center">
-                {status} ({tasksByStatus[status]?.length || 0})
-              </h4>
-              <div className="flex-grow flex flex-col gap-3 min-h-[50px]">
-                {tasksByStatus[status] && tasksByStatus[status].length > 0 ? (
-                  tasksByStatus[status].map(t => (
+       {viewMode === 'kanban' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
+          {statusColumns.map((column) => (
+            (tasksByStatus[column.title] || ['To Do', 'In Progress', 'In Review'].includes(column.title)) && (
+              <div key={column.title} className={`${column.color} rounded-lg p-4 flex flex-col shadow-sm`}>
+                <h4 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-50 text-center">
+                  {column.title} ({tasksByStatus[column.title]?.length || 0})
+                </h4>
+                <div className="flex-grow flex flex-col gap-4 min-h-[200px]">
+                  {tasksByStatus[column.title]?.map(t => (
                     <TaskCard
                       key={t.taskId}
                       task={t}
                       openCommentsModal={openCommentsModal}
                       unreadComments={unreadMap[t.taskId]}
+                      onStatusChange={handleStatusChange}
                       onEdit={editTask}
                       onDelete={askForDeleteConfirmation}
                     />
-                  ))
-                ) : (
-                  <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-5">No tasks in this column.</p>
-                )}
+                  ))}
+                </div>
               </div>
-            </div>
+            )
           ))}
         </div>
       )}

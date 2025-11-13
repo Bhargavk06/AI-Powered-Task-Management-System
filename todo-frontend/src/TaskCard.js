@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import Icon from './components/AppIcon'; 
-import Button from './components/ui/Button'; 
+import Icon from './components/AppIcon';
+import Button from './components/Button';
 import { useAuth } from './context/AuthContext';
 import FileList from './fileHandling/FileList';
+import { Check, X } from 'react-feather'; // Icons for approve/reject
 // You'll likely need an AppImage component or replace it with a simple <img> tag
 // For simplicity, I'm just using a placeholder <img> tag.
 const AppImage = ({ src, alt, className }) => (
@@ -24,17 +25,22 @@ const TaskCard = ({
   isDragging = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { user,isAdmin } = useAuth();
-  const {isManager} = useAuth();
+  const { user, isAdmin, isManager } = useAuth();
+ 
 
-   // --- NEW STATE FOR INLINE FILE UPLOAD ---
+  // --- NEW STATE FOR INLINE FILE UPLOAD ---
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState('');
   const [uploadSuccessCount, setUploadSuccessCount] = useState(0); // This will trigger FileList refresh
 
+  // ACCESS RESTRICTION
   const canUpload = isAdmin || isManager;
   const canModify = isAdmin || (user?.userId === task.assignedById);
+  const isTaskInReview = task.status?.toLowerCase() === 'in review';
+  const isTaskDone = task.status?.toLowerCase() === 'done';
+  const isCurrentUserTheAssigner = user?.userId === task.assignedById;
+
 
   const handleFileChange = (event) => {
     setSelectedFile(event.target.files[0]);
@@ -80,7 +86,8 @@ const TaskCard = ({
       case 'done': return 'text-green-700 bg-green-100'; // Renamed 'completed' to 'done'
       case 'in progress': return 'text-blue-700 bg-blue-100'; // Renamed 'in-progress'
       case 'to do': return 'text-yellow-700 bg-yellow-100'; // Renamed 'pending'
-      case 'on-hold': return 'text-purple-700 bg-purple-100'; // Added 'on-hold'
+      //case 'on-hold': return 'text-purple-700 bg-purple-100'; // Added 'on-hold'
+      case 'in review': return 'text-purple-700 bg-purple-100';
       default: return 'text-gray-700 bg-gray-100';
     }
   };
@@ -121,8 +128,8 @@ const TaskCard = ({
       <div className="p-4 border-b border-gray-100">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-           <div className="flex items-center flex-wrap gap-2 mb-2">
-               {/* Project Name Pill */}
+            <div className="flex items-center flex-wrap gap-2 mb-2">
+              {/* Project Name Pill */}
               <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
                 <Icon name="Folder" size={12} className="mr-1.5" />
                 {task.project ? task.project.name : 'N/A'}
@@ -137,7 +144,7 @@ const TaskCard = ({
                 {task?.status?.replace('-', ' ')?.charAt(0)?.toUpperCase() + task?.status?.replace('-', ' ')?.slice(1)}
               </span>
 
-                {/* Assigner Name Pill */}
+              {/* Assigner Name Pill */}
               {task.assignedBy && (
                 <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                   <Icon name="User" size={12} className="mr-1.5" />
@@ -145,11 +152,11 @@ const TaskCard = ({
                 </span>
               )}
             </div>
-            
+
             <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
               {task?.taskname}
             </h3>
-            
+
             <p className="text-sm text-gray-600 line-clamp-2">
               {task?.description}
             </p>
@@ -179,11 +186,11 @@ const TaskCard = ({
               {task?.status?.toLowerCase() !== 'Done' && daysUntilDue !== null && daysUntilDue >= 0 && daysUntilDue <= 3 && (
                 <span className="text-yellow-600 font-medium">({daysUntilDue} days left)</span>
               )}
-              {task?.status?.toLowerCase() !== 'Done' && daysUntilDue !== null && daysUntilDue >3 && (
+              {task?.status?.toLowerCase() !== 'Done' && daysUntilDue !== null && daysUntilDue > 3 && (
                 <span className="text-green-600 font-medium">({daysUntilDue} days left)</span>
               )}
             </div>
-            
+
             {/* If you have estimated hours in your task data, uncomment this */}
             {/* <div className="flex items-center space-x-1">
               <Icon name="Clock" size={14} />
@@ -238,75 +245,94 @@ const TaskCard = ({
         */}
 
         {/* Expanded Details */}
-      {isExpanded && (
-        // THE FIX: This single div wraps ALL expanded content, isolating it from the parent grid.
-        <div className="border-t border-gray-200 pt-4 mt-4"> 
-          <div className="space-y-4"> {/* Use space-y for consistent vertical spacing */}
+        {isExpanded && (
+          // THE FIX: This single div wraps ALL expanded content, isolating it from the parent grid.
+          <div className="border-t border-gray-200 pt-4 mt-4">
+            <div className="space-y-4"> {/* Use space-y for consistent vertical spacing */}
 
-            {/* --- ATTACHMENTS SECTION --- */}
-            <div>
-              <h4 className="text-sm font-semibold text-gray-800 mb-2">Attachments</h4>
-              <FileList taskId={task.taskId} triggerRefresh={uploadSuccessCount} />
-              
-              {/* --- CONDITIONAL UPLOAD UI --- */}
-              {canUpload && (
-                <div className="mt-4 pt-4 border-t border-gray-100 border-dashed">
-                  {/* Use Flexbox for clean alignment of the input and button */}
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="file"
-                      id={`file-input-${task.taskId}`}
-                      onChange={handleFileChange}
-                      className="block w-full text-sm text-gray-600 file:mr-3
+              {/* --- ATTACHMENTS SECTION --- */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-800 mb-2">Attachments</h4>
+                <FileList taskId={task.taskId} triggerRefresh={uploadSuccessCount} />
+
+                {/* --- CONDITIONAL UPLOAD UI --- */}
+                {canUpload && (
+                  <div className="mt-4 pt-4 border-t border-gray-100 border-dashed">
+                    {/* Use Flexbox for clean alignment of the input and button */}
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="file"
+                        id={`file-input-${task.taskId}`}
+                        onChange={handleFileChange}
+                        className="block w-full text-sm text-gray-600 file:mr-3
                         file:py-1.5 file:px-3 file:rounded-lg file:border-0
                         file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700
                         hover:file:bg-blue-100 cursor-pointer"
-                    />
-                    <Button
-                      size="sm"
-                      onClick={handleUpload}
-                      disabled={!selectedFile || isUploading}
-                      className="flex-shrink-0" // Prevents the button from shrinking
-                    >
-                      <Icon name="Upload" size={14} className="mr-1.5" />
-                      {isUploading ? '...' : 'Upload'}
-                    </Button>
+                      />
+                      <Button
+                        size="sm"
+                        onClick={handleUpload}
+                        disabled={!selectedFile || isUploading}
+                        className="flex-shrink-0" // Prevents the button from shrinking
+                      >
+                        <Icon name="Upload" size={14} className="mr-1.5" />
+                        {isUploading ? '...' : 'Upload'}
+                      </Button>
+                    </div>
+                    {uploadMessage && (
+                      <p className="text-xs text-gray-500 mt-2">{uploadMessage}</p>
+                    )}
                   </div>
-                  {uploadMessage && (
-                    <p className="text-xs text-gray-500 mt-2">{uploadMessage}</p>
-                  )}
-                </div>
-              )}
-            </div>
+                )}
+              </div>
 
-            {/* --- COMMENTS SECTION --- */}
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
+              {/* --- COMMENTS SECTION --- */}
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
                 <Icon name="MessageCircle" size={14} />
                 <span>Comments ({task?.commentsCount || 0})</span>
                 {unreadComments && <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse ml-1"></span>}
-            </div>
+              </div>
 
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
         {/* Action Buttons */}
         <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-3">
           <div className="flex items-center space-x-2">
             {/* ===== CONDITIONAL STATUS CONTROL ===== */}
             {/* FOR EMPLOYEE: Show dropdown if onStatusChange is provided */}
-            {showStatusChanger && onStatusChange && (
+            {showStatusChanger && !isTaskInReview && !isTaskDone && onStatusChange && (
             <select
               value={task?.status || 'To Do'}
               onChange={(e) => onStatusChange(task.taskId, e.target.value)}
-              className="px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="px-3 py-2 text-sm rounded-md border border-gray-300 ..."
             >
-                <option value="To Do">To Do</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Done">Done</option>
-              </select>
-            )}
+              <option value="To Do">To Do</option>
+              <option value="In Progress">In Progress</option>
+              <option value="In Review">Send for Review</option>
+            </select>
+          )}
           </div>
+
+          {isCurrentUserTheAssigner && isTaskInReview && onStatusChange && (
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => onStatusChange(task.taskId, 'Done')}
+                className="flex items-center px-3 py-1.5 text-xs font-semibold text-green-700 bg-green-100 rounded-md hover:bg-green-200"
+              >
+                <Check size={14} className="mr-1" />
+                Approve
+              </button>
+              <button
+                onClick={() => onStatusChange(task.taskId, 'In Progress')}
+                className="flex items-center px-3 py-1.5 text-xs font-semibold text-red-700 bg-red-100 rounded-md hover:bg-red-200"
+              >
+                <X size={14} className="mr-1" />
+                Reject
+              </button>
+            </div>
+          )}
 
           <div className="flex items-center space-x-2">
             <Button
@@ -317,26 +343,26 @@ const TaskCard = ({
               <Icon name="MessageSquare" size={14} className="mr-1" />
               Comments {unreadComments && <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse ml-1"></span>}
             </Button>
-            
+
             {/* ===== CONDITIONAL ADMIN BUTTONS ===== */}
             {/* Add Edit/Delete buttons if needed and pass those handlers */}
             {/* FOR ADMIN: Show Edit button if onEdit is provided */}
-           {canModify && onEdit && (
-            <Button variant="outline" size="sm" onClick={() => onEdit(task)}>
-              <Icon name="Edit2" size={14} className="mr-1" />
-              Edit
-            </Button>
-          )}
+            {canModify && onEdit && (
+              <Button variant="outline" size="sm" onClick={() => onEdit(task)}>
+                <Icon name="Edit2" size={14} className="mr-1" />
+                Edit
+              </Button>
+            )}
             {/* FOR ADMIN: Show Delete button if onDelete is provided */}
-           {canModify && onDelete && (
-    <Button variant="ghost" size="sm" onClick={(e) => {
-      e.stopPropagation();     // Prevent other clicks
-      onDelete(task.taskId); // Call the parent's function with ONLY the ID
-    }} // <-- CORRECTED LINE
-      className="text-red-600 hover:text-red-700 hover:bg-red-50">
-      <Icon name="Trash2" size={14} />
-    </Button>
-)}
+            {canModify && onDelete && (
+              <Button variant="ghost" size="sm" onClick={(e) => {
+                e.stopPropagation();     // Prevent other clicks
+                onDelete(task.taskId); // Call the parent's function with ONLY the ID
+              }} // <-- CORRECTED LINE
+                className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                <Icon name="Trash2" size={14} />
+              </Button>
+            )}
           </div>
         </div>
       </div>

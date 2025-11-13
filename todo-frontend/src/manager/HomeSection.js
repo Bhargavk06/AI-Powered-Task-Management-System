@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Users, Briefcase, Folder, CheckSquare } from 'react-feather'; // Import icons
-import { useParams} from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 // A reusable StatCard component for a clean and scalable dashboard
 const StatCard = ({ icon, title, value, isLoading, color = 'emerald' }) => {
   const Icon = icon;
@@ -42,6 +42,7 @@ const StatCard = ({ icon, title, value, isLoading, color = 'emerald' }) => {
 
 
 function HomeSection() {
+  const { user } = useAuth();
   const [stats, setStats] = useState({
     employeeCount: 0,
     managerCount: 0,
@@ -80,6 +81,8 @@ function HomeSection() {
     fetchAllStats();
   }, [userId]); // Runs once when component mounts
 
+  const username = user?.username;
+
   return (
     // Main container with consistent padding and background
     <div className="w-full p-6 md:p-8">
@@ -87,7 +90,7 @@ function HomeSection() {
 
         {/* Welcome Header */}
         <div>
-          <h1 className="text-3xl font-bold text-slate-800">Welcome Back!</h1>
+          <h1 className="text-3xl font-bold text-slate-800">Welcome, {username} !</h1>
           <p className="text-slate-500 mt-1">Here's a summary of your workspace.</p>
         </div>
 

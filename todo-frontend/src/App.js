@@ -7,7 +7,7 @@ import './styles/tailwind.css';
 
 // CONTEXT PROVIDERS
 import { AuthProvider } from './context/AuthContext';
-import { NotificationProvider } from './NotificationProvider';
+import { NotificationProvider } from './notifications/NotificationProvider';
 import ThemeProvider from './ThemeContext';
 
 // GENERAL PAGES
@@ -31,7 +31,7 @@ import TaskRecommender from './admin/TaskRecommender';
 import AdminHome from './admin/HomeSection'; 
 import ManagerHome from './manager/HomeSection'; 
 import TaskSummarySection from './admin/TaskSummarySection'; 
-import AdminNotifications from './admin/NotificationsSection'; 
+import NotificationPage from './notifications/NotificationPage';
  // New component
 import ProjectForm from './projects/ProjectForm'; 
 import EditProjectForm from './projects/EditProjectForm';
@@ -45,6 +45,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <ThemeProvider>
+           <NotificationProvider>
           {/* NotificationProvider might be better placed inside layouts if it depends on user roles */}
             <Routes>
               {/* Public Routes */}
@@ -66,6 +67,7 @@ function App() {
                 <Route path="projects/:projectId/assign/:userId" element={<ProjectTaskAssignment />} />
                 <Route path="task-summary" element={<TaskSummarySection />} />
                 <Route path="task-recommender" element={<TaskRecommender />} />
+                <Route path="notifications" element={<NotificationPage />} />
               </Route>
               
               {/* --- ADMIN NESTED ROUTES (EXPANDED) --- */}
@@ -83,11 +85,12 @@ function App() {
                   <Route path="projects/:projectId/assign/:userId" element={<ProjectTaskAssignment />} />
                   <Route path="task-recommender" element={<TaskRecommender />} />
                   <Route path="task-summary" element={<TaskSummarySection />} />
-                  <Route path="notifications" element={<AdminNotifications />} />
+                  <Route path="notifications" element={<NotificationPage />} />
                   <Route path="assignTask/:id" element={<AssignTaskPage />} />
               </Route>
 
             </Routes>
+            </NotificationProvider>
         </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>

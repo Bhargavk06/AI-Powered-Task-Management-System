@@ -1,7 +1,7 @@
 import React, { useState} from 'react';
 import { Outlet } from 'react-router-dom';
 import ManagerDashboard from './ManagerDashboard';
-import { NotificationProvider } from '../NotificationProvider';
+import { NotificationProvider } from '../notifications/NotificationProvider';
 import { useAuth } from '../context/AuthContext';
 
 function ManagerTodo() {
