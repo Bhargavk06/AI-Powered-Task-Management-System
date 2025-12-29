@@ -52,16 +52,23 @@ function HomeSection() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Use Promise.all to fetch all data concurrently for better performance
     const fetchAllStats = async () => {
       setIsLoading(true);
+       const token = localStorage.getItem('token');
+      if (!token) {
+        console.error("Authentication Error: No token found.");
+        setIsLoading(false);
+        return;
+      }
+
+      const headers = {
+        'Authorization': `Bearer ${token}`
+      };
       try {
         const [employeesRes, managersRes, projectsRes] = await Promise.all([
-          axios.get('http://localhost:8080/profile/employees'),
-          axios.get('http://localhost:8080/profile/managers'),
-          // You can add more API calls here in the future
-          axios.get('http://localhost:8080/projects'),
-          // axios.get('http://localhost:8080/tasks')
+          axios.get('http://localhost:8080/profile/employees', {headers}),
+          axios.get('http://localhost:8080/profile/managers', {headers}),
+          axios.get('http://localhost:8080/projects', {headers}),
         ]);
 
         setStats({

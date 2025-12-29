@@ -1,4 +1,3 @@
-// src/projects/ProjectForm.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -6,15 +5,21 @@ import Select from 'react-select';
 
 function ProjectForm() {
   const [projectName, setProjectName] = useState('');
-  const [description, setDescription] = useState(''); // <-- 1. ADD STATE FOR DESCRIPTION
+  const [description, setDescription] = useState(''); 
   const [userOptions, setUserOptions] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // ... (useEffect to fetch users remains the same)
+  
   useEffect(() => {
-    axios.get('http://localhost:8080/user/all')
+    const token = localStorage.getItem('token');
+    if(!token){
+        alert("Authentication Error: Please log in again.");
+        return;
+    }
+    const headers = {'Authorization': `Bearer ${token}`};
+    axios.get('http://localhost:8080/user/all', {headers})
       .then(response => {
         const formattedUsers = response.data.map(user => ({
           value: user.id,
@@ -27,6 +32,13 @@ function ProjectForm() {
 
 
   const handleSubmit = (event) => {
+    const token = localStorage.getItem('token');
+    if(!token){
+        alert("Authentication Error: Please log in again.");
+        setIsLoading(false);
+        return;
+    }
+    const headers= {'Authorization': `Bearer ${token}`};
     event.preventDefault();
     if (!projectName.trim() || selectedUsers.length === 0) {
       alert("Please provide a project name and select at least one user.");
@@ -42,7 +54,7 @@ function ProjectForm() {
       userIds: selectedUserIds,
     };
 
-    axios.post('http://localhost:8080/projects', newProjectData)
+    axios.post('http://localhost:8080/projects', newProjectData, {headers})
       .then(() => navigate('/admin/projects'))
       .catch(error => {
         console.error("Error creating project:", error);

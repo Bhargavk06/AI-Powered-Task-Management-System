@@ -11,7 +11,14 @@ function ManagerSection() {
 
   // --- No changes to the logic section. It's perfect. ---
   useEffect(() => {
-    axios.get('http://localhost:8080/profile/managers')
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert("Authentication Error: Please log in again.");
+        return Promise.reject("No token found");
+    }
+    const headers = { 'Authorization': `Bearer ${token}` };
+
+    axios.get('http://localhost:8080/profile/managers', {headers})
       .then(response => {
         if (Array.isArray(response.data)) {
           setAllManagers(response.data);
@@ -34,7 +41,14 @@ function ManagerSection() {
   };
 
   const deleteEmployeeAction = (managerId) => {
-      return axios.delete(`http://localhost:8080/profile/user/${managerId}`)
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert("Authentication Error: Please log in again.");
+        return Promise.reject("No token found");
+    }
+    const headers = { 'Authorization': `Bearer ${token}` };
+
+      return axios.delete(`http://localhost:8080/profile/user/${managerId}`, {headers})
         .then(() => {
           setAllManagers(prev => prev.filter(mng => mng.id !== managerId));
         })

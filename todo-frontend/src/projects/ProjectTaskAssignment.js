@@ -1,21 +1,22 @@
-// src/projects/ProjectTaskAssignment.js
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-
+import { useAuth } from '../context/AuthContext';
 // Import your powerful, reusable components
 import TaskCard from '../TaskCard';
-import NewTaskModal from './NewTaskModal'; // We'll use a modal for a cleaner UI
-import TaskComments from '../TaskComments'; // Assuming path is correct
+import NewTaskModal from './NewTaskModal'; 
+import TaskComments from '../TaskComments'; 
+import useConfirmationModal from '../components/useConfirmationModal';
 
 // Import icons
 import { ArrowLeft, Plus, Search, List, Layout, Calendar as CalendarIcon, Filter } from 'react-feather';
 import Icon from '../components/AppIcon';
-// Helper functions for the calendar view (can be moved to a utils file)
+
 const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
 const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
 
 function ProjectTaskAssignment() {
+  const { user } = useAuth();
   const { projectId, userId } = useParams();
   const navigate = useNavigate();
   const loggedInUserId = localStorage.getItem('userId'); // For comments
@@ -58,12 +59,21 @@ function ProjectTaskAssignment() {
   }).length;
 
   // === Data Fetching ===
-  const fetchData = () => {
+ const fetchData = () => {
+
+    if (!user || !user.userId) return;
+    const token = localStorage.getItem('token');
+    if (!token) {
+        console.error("Authentication Error: No token found.");
+        setIsLoading(false);
+        return;
+    }
+    const headers = { 'Authorization': `Bearer ${token}` };
+
     setIsLoading(true);
-    // Use the new, project-specific API endpoints
-    const projectRequest = axios.get(`http://localhost:8080/projects/${projectId}`);
-    const tasksRequest = axios.get(`http://localhost:8080/assigntask/projects/${projectId}/users/${userId}/tasks`);
-    const unreadMapRequest = axios.get(`http://localhost:8080/comments/unread-map/${loggedInUserId}`);
+    const projectRequest = axios.get(`http://localhost:8080/projects/${projectId}`, { headers });
+    const tasksRequest = axios.get(`http://localhost:8080/assigntask/projects/${projectId}/users/${userId}/tasks`, { headers });
+    const unreadMapRequest = axios.get(`http://localhost:8080/comments/unread-map`, { headers });
 
     Promise.all([projectRequest, tasksRequest, unreadMapRequest])
       .then(([projectResponse, tasksResponse, unreadResponse]) => {
@@ -75,13 +85,17 @@ function ProjectTaskAssignment() {
       .finally(() => setIsLoading(false));
   };
 
+
   useEffect(() => {
     fetchData();
-  }, [projectId, userId, loggedInUserId]);
+  }, [projectId, userId, user]);
 
   // === Event Handlers ===
   const handleStatusChange = (taskId, newStatus) => {
-    axios.put('http://localhost:8080/assigntask/updateStatus', { taskId, status: newStatus })
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const headers = { 'Authorization': `Bearer ${token}` };
+    axios.put('http://localhost:8080/assigntask/updateStatus', { taskId, status: newStatus }, {headers})
       .then(() => {
         setTasks(prev => prev.map(t => t.taskId === taskId ? { ...t, status: newStatus } : t));
       })
@@ -94,18 +108,28 @@ function ProjectTaskAssignment() {
   };
 
   const handleDelete = (taskId) => {
-    if (window.confirm("Are you sure you want to delete this task?")) {
-      axios.delete(`http://localhost:8080/assigntask/deleteTask/${taskId}`)
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const headers = { 'Authorization': `Bearer ${token}` };
+      axios.delete(`http://localhost:8080/assigntask/deleteTask/${taskId}`,{headers})
         .then(() => {
-          // Refresh the task list after deleting
           fetchData(); 
         })
         .catch((error) => console.error("Error deleting the task:", error));
-    }
   };
+
+  const [askForDeleteConfirmation, DeleteConfirmationModal] = useConfirmationModal({
+      onConfirm: handleDelete,
+      title: "Delete Task",
+      message: "Are you sure you want to delete this task? This cannot be undone.",
+      confirmText: "Delete",
+    });
   
   const openCommentsModal = (task) => {
-      axios.get(`http://localhost:8080/comments/view/${task.taskId}/${loggedInUserId}`)
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const headers = { 'Authorization': `Bearer ${token}` };
+      axios.get(`http://localhost:8080/comments/view/${task.taskId}/${user.userId}`, {headers})
           .then(() => setUnreadMap(prev => ({...prev, [task.taskId]: false })))
           .catch(err => console.error("Failed to mark as read", err));
       setSelectedTaskForComments(task);
@@ -351,7 +375,7 @@ function ProjectTaskAssignment() {
         <>
           {viewMode === 'list' && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredTasks.map(task => <TaskCard key={task.taskId} task={task} onStatusChange={handleStatusChange} onDelete={handleDelete} onEdit={handleEdit} openCommentsModal={() => openCommentsModal(task)} unreadComments={unreadMap[task.taskId]} />)}
+              {filteredTasks.map(task => <TaskCard key={task.taskId} task={task} onStatusChange={handleStatusChange} onDelete={askForDeleteConfirmation} onEdit={handleEdit} openCommentsModal={() => openCommentsModal(task)} unreadComments={unreadMap[task.taskId]} />)}
             </div>
           )}
           {viewMode === 'kanban' && (
@@ -360,7 +384,7 @@ function ProjectTaskAssignment() {
                 <div key={status} className="bg-gray-100 rounded-lg p-4">
                   <h4 className="font-bold text-center mb-4">{status} ({tasksByStatus[status]?.length || 0})</h4>
                   <div className="space-y-4">
-                    {tasksByStatus[status]?.map(task => <TaskCard key={task.taskId} task={task} onStatusChange={handleStatusChange} onDelete={handleDelete} onEdit={handleEdit} openCommentsModal={() => openCommentsModal(task)} unreadComments={unreadMap[task.taskId]} />)}
+                    {tasksByStatus[status]?.map(task => <TaskCard key={task.taskId} task={task} onStatusChange={handleStatusChange} onDelete={askForDeleteConfirmation} onEdit={handleEdit} openCommentsModal={() => openCommentsModal(task)} unreadComments={unreadMap[task.taskId]} />)}
                   </div>
                 </div>
               ))}
@@ -416,6 +440,7 @@ function ProjectTaskAssignment() {
           onClose={() => setSelectedTaskForComments(null)}
         />
       )}
+      <DeleteConfirmationModal/>
     </div>
   );
 }

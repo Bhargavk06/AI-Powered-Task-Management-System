@@ -43,31 +43,44 @@ function ManagerTasks() {
     if(!user){
       return;
     }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+        console.error("Authentication Error: No token found.");
+        return;
+    }
+    const headers = {
+        'Authorization': `Bearer ${token}`
+      };
     const userId=user.userId;
     if (userId) {
-      axios.get(`http://localhost:8080/assigntask/gettask/${userId}`)
+      axios.get(`http://localhost:8080/assigntask/gettask/${userId}`, {headers})
         .then((response) => setTasks(response.data))
         .catch((error) => console.log(error));
 
-      axios.get(`http://localhost:8080/comments/unread-map/${userId}`)
+      axios.get(`http://localhost:8080/comments/unread-map`, {headers})
         .then((res) => setUnreadMap(res.data))
         .catch((err) => console.log("Error loading unread map", err));
     }
   }, [user]);
 
-  // This function is for changing a task's *own* status as a manager.
-  // The TaskCard already has an onStatusChange prop that will handle this
-  // Inside ManagerTasks.js
- const statusChangeAction = ({ taskId, newStatus }) => {
-    if (!user || !user.userId) {
-        console.error("Cannot update status: logged in user not found.");
-        return Promise.reject("User not found"); // Return a rejected promise
+
+  const statusChangeAction = ({ taskId, newStatus }) => {
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+        console.error("Authentication Error: No token found.");
+        return Promise.reject("No token found");
     }
 
-    return axios.put(`http://localhost:8080/assigntask/updateStatus?updatedByUserId=${user.userId}`, { 
+    const headers = {
+        'Authorization': `Bearer ${token}`
+    };
+
+    return axios.put(`http://localhost:8080/assigntask/updateStatus`, { 
         taskId, 
         status: newStatus 
-    })
+    }, { headers })
       .then(() => {
         setTasks(prev => prev.map(t => t.taskId === taskId ? { ...t, status: newStatus } : t));
       })
@@ -77,7 +90,6 @@ function ManagerTasks() {
         throw error; 
       });
   };
-
   // 2. Set up the confirmation hook, telling it to use our core action function.
   const [askForReviewConfirmation, ReviewConfirmationModal] = useConfirmationModal({
     onConfirm: statusChangeAction,
@@ -99,12 +111,17 @@ function ManagerTasks() {
   };
 
 
-const openCommentsModal = async (task) => {
+ const openCommentsModal = async (task) => {
     if (!user || !user.userId) return;
+
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const headers = { 'Authorization': `Bearer ${token}` };
+
     try {
-      await axios.get(`http://localhost:8080/comments/view/${task.taskId}/${user.userId}`);
+      await axios.get(`http://localhost:8080/comments/view/${task.taskId}/${user.userId}`, { headers });
       setUnreadMap((prev) => ({ ...prev, [task.taskId]: false }));
-      // This state update is what opens the modal
       setSelectedTaskForComments(task); 
     } catch (err) {
       console.error("Failed to mark as read", err);
@@ -113,12 +130,14 @@ const openCommentsModal = async (task) => {
 
   //Chat Application
   const handleSendMessageToGemini = async (prompt,history) => {
-      // Your existing logic to call the backend API
+     const token = localStorage.getItem('token');
+    if (!token) return Promise.reject("No token found");
+    const headers = { 'Authorization': `Bearer ${token}` };
         const payload = {
         newPrompt: prompt,
         history: history 
     };
-    const res = await axios.post('http://localhost:8080/api/gemini/ask', payload);
+    const res = await axios.post('http://localhost:8080/api/gemini/ask', payload, { headers });
     return res.data;
   };
 

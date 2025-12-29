@@ -16,9 +16,18 @@ function ProjectDetailsPage() {
   useEffect(() => {
     if (!projectId) return;
 
+    const token = localStorage.getItem('token');
+    if (!token) {
+        console.error("Authentication Error: No token found.");
+        setIsLoading(false);
+        return;
+    }
+    const headers = {
+        'Authorization': `Bearer ${token}`
+    };
+
     setIsLoading(true);
-    // Make sure this URL is correct based on your backend controller
-    axios.get(`http://localhost:8080/projects/${projectId}`)
+    axios.get(`http://localhost:8080/projects/${projectId}`, { headers })
       .then(response => {
         setProject(response.data);
         setAssignedUsers(response.data.assignedUsers || []);

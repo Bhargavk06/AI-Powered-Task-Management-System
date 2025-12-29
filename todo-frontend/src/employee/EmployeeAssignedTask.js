@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import TaskComments from './TaskComments';
+import TaskComments from '../TaskComments';
 import { useNavigate } from 'react-router-dom';
-import TaskCard from './TaskCard';
-import Icon from './components/AppIcon';
-import Button from './components/Button';
-import { useAuth } from './context/AuthContext';
-import ChatWindow from './ChatWindow'; 
+import TaskCard from '../TaskCard';
+import Icon from '../components/AppIcon';
+import Button from '../components/Button';
+import { useAuth } from '../context/AuthContext';
+import ChatWindow from '../ChatWindow'; 
 import { MessageSquare, Bell, X, Mail, CheckCircle } from 'react-feather'; 
-import { useNotifications } from './notifications/NotificationProvider'; 
+import { useNotifications } from '../notifications/NotificationProvider'; 
 
 // Helper functions (keep these)
 const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
@@ -63,7 +63,7 @@ const NotificationItem = ({ notification, onMarkAsRead }) => {
   );
 };
 
-function EmployeeTodo() {
+function EmployeeAssignedTask() {
    const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
    const { 
     notifications, 
@@ -657,5 +657,5 @@ const statusColumns = [
   );
 }
 
-export default EmployeeTodo;
+export default EmployeeAssignedTask;
 

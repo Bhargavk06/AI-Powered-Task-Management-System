@@ -12,7 +12,17 @@ function EmployeeSection() {
   // No changes needed for the data fetching and business logic.
   // It's already well-structured.
   useEffect(() => {
-    axios.get('http://localhost:8080/profile/employees')
+    const token = localStorage.getItem('token');
+      if (!token) {
+        console.error("Authentication Error: No token found.");
+        return;
+      }
+
+      const headers = {
+        'Authorization': `Bearer ${token}`
+      };
+
+    axios.get('http://localhost:8080/profile/employees',{headers})
       .then(response => {
         if (Array.isArray(response.data)) {
           setAllEmployees(response.data);
@@ -35,7 +45,18 @@ function EmployeeSection() {
   };
 
   const deleteEmployeeAction  = (employeeId) => {
-      return axios.delete(`http://localhost:8080/profile/user/${employeeId}`)
+
+    const token = localStorage.getItem('token');
+      if (!token) {
+        console.error("Authentication Error: No token found.");
+        return;
+      }
+
+      const headers = {
+        'Authorization': `Bearer ${token}`
+      };
+
+      return axios.delete(`http://localhost:8080/profile/user/${employeeId}`, {headers})
         .then(() => {
           setAllEmployees(prev => prev.filter(emp => emp.id !== employeeId));
         })

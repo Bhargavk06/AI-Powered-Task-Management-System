@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNotifications } from './NotificationProvider'; // This path is now correct
+import { useNotifications } from './NotificationProvider'; 
 import { Mail, CheckCircle, Bell } from 'react-feather';
 
 const NotificationPage = () => {

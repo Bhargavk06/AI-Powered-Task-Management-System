@@ -7,18 +7,22 @@ function TaskRecommender() {
   const [recommendations, setRecommendations] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  
-  // --- NEW: State to hold a map of user IDs to usernames ---
   const [userMap, setUserMap] = useState({});
 
-  // --- NEW: useEffect to fetch all users on component mount ---
+ 
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert("Authentication Error: Please log in again.");
+        return Promise.reject("No token found");
+    }
+    const headers = { 'Authorization': `Bearer ${token}` };
+
     const fetchUsers = async () => {
       try {
-        // Fetch both employees and managers concurrently
         const [employeesRes, managersRes] = await Promise.all([
-          axios.get('http://localhost:8080/profile/employees'),
-          axios.get('http://localhost:8080/profile/managers')
+          axios.get('http://localhost:8080/profile/employees', {headers}),
+          axios.get('http://localhost:8080/profile/managers', {headers})
         ]);
 
         const allUsers = [...employeesRes.data, ...managersRes.data];
@@ -47,10 +51,20 @@ function TaskRecommender() {
     setError('');
     setRecommendations([]);
 
+    const token = localStorage.getItem('token');
+    if (!token) {
+        setError("Authentication Error: Please log in again.");
+        setIsLoading(false);
+        return;
+    }
+
+    const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'text/plain' 
+    };
+
     axios
-      .post(`http://localhost:8080/api/recommend`, description, {
-        headers: { 'Content-Type': 'text/plain' }
-      })
+      .post(`http://localhost:8080/api/recommend`, description, {headers})
       .then(response => {
         if (Array.isArray(response.data)) {
           setRecommendations(response.data);

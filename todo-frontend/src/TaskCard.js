@@ -49,13 +49,19 @@ const TaskCard = ({
 
   const handleUpload = () => {
     if (!selectedFile) return;
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert("Authentication Error: Please log in again.");
+        return Promise.reject("No token found");
+    }
+    const headers = { 'Authorization': `Bearer ${token}` };
 
     setIsUploading(true);
     setUploadMessage('Uploading...');
     const formData = new FormData();
     formData.append('file', selectedFile);
 
-    axios.post(`http://localhost:8080/api/tasks/${task.taskId}/files`, formData)
+    axios.post(`http://localhost:8080/api/tasks/${task.taskId}/files`, formData, {headers})
       .then(response => {
         setUploadMessage('Upload successful!');
         setSelectedFile(null); // Clear the selected file

@@ -36,13 +36,21 @@ function TaskSummarySection() {
 
   useEffect(() => {
     const fetchSummaries = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert("Authentication Error: Please log in again.");
+        setIsLoading(false);
+        return Promise.reject("No token found");
+      }
+      const headers = { 'Authorization': `Bearer ${token}` };
+
       setIsLoading(true);
       try {
         // Fetch all endpoints concurrently for better performance
         const [totalRes, employeeRes, managerRes] = await Promise.all([
-          axios.get('http://localhost:8080/assigntask/totalSummary'),
-          axios.get('http://localhost:8080/assigntask/totalEmployeeSummary'),
-          axios.get('http://localhost:8080/assigntask/totalManagerSummary'),
+          axios.get('http://localhost:8080/assigntask/totalSummary', {headers}),
+          axios.get('http://localhost:8080/assigntask/totalEmployeeSummary', {headers}),
+          axios.get('http://localhost:8080/assigntask/totalManagerSummary', {headers}),
         ]);
 
         // Process and set all data at once
