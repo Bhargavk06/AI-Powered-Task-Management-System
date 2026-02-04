@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import com.example.todo.AssignedTask;
@@ -29,7 +30,6 @@ public class AssignedTaskController {
     @Autowired
     private NotificationService notificationService;
     
-    // For specific project tasks
     @GetMapping("/projects/{projectId}/users/{userId}/tasks")
     public ResponseEntity<List<TaskDto>> getTasksForProjectAndUser(
             @PathVariable Long projectId,
@@ -54,9 +54,9 @@ public class AssignedTaskController {
     @PostMapping("/projects/{projectId}/tasks")
     public ResponseEntity<AssignedTask> createTaskForProject(
             @PathVariable Long projectId,
-            @RequestParam String assignerId,
+            Authentication authentication,
             @RequestBody TaskCreateRequest taskRequest) {
-        // Assuming you get the admin/manager's ID from the security context// Replace with actual security logic
+    	String assignerId= authentication.getName();
         AssignedTask createdTask = assignedtaskservice.createTask(taskRequest, assignerId, projectId);
         return ResponseEntity.ok(createdTask);
     }
@@ -65,8 +65,9 @@ public class AssignedTaskController {
     @PostMapping("/assign/{assigneeId}")
     public ResponseEntity<String> assignTask(
         @PathVariable String assigneeId,
-        @RequestParam String assignerId,
+        Authentication authentication,
         @RequestBody AssignedTask assignedtask) {
+    	String assignerId = authentication.getName();
 
         UserAuthentication assignee = userRepo.findById(assigneeId).orElse(null);
         UserAuthentication assigner = userRepo.findById(assignerId).orElse(null);
@@ -90,25 +91,26 @@ public class AssignedTaskController {
 
     
     @PutMapping("/updateStatus")
-    public void updateStatus(@RequestBody Map<String, String> data) {
+    public void updateStatus(@RequestBody Map<String, String> data,  Authentication authentication) {
         Long taskId = Long.parseLong(data.get("taskId"));
         String status = data.get("status");
+        String updatedByUserId = authentication.getName();
 
-        assignedtaskservice.updateStatus(taskId, status);
+        assignedtaskservice.updateStatus(taskId, status, updatedByUserId);
 
         
-        AssignedTask task = assignedtaskservice.getTaskById(taskId);
-
-        if (task != null && task.getAssignedBy() != null) {
-            String senderId = task.getAssignee().getId();
-            String receiverId = task.getAssignedBy().getId();
-
-            notificationService.sendNotification(
-                senderId,
-                receiverId,
-                "Task '" + task.getTaskname() + "' marked as '" + status + "'"
-            );
-        }
+//        AssignedTask task = assignedtaskservice.getTaskById(taskId);
+//
+//        if (task != null && task.getAssignedBy() != null) {
+//            String senderId = task.getAssignee().getId();
+//            String receiverId = task.getAssignedBy().getId();
+//
+//            notificationService.sendNotification(
+//                senderId,
+//                receiverId,
+//                "Task '" + task.getTaskname() + "' marked as '" + status + "'"
+//            );
+//        }
     }
 
  

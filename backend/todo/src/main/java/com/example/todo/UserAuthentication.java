@@ -24,7 +24,7 @@ public class UserAuthentication {
     private List<AssignedTask> assignedTasks;
     
     @ManyToMany(mappedBy = "assignedUsers", fetch = FetchType.LAZY)
-    @JsonIgnore // Important to prevent infinite loops
+    @JsonIgnore 
     private Set<ProjectEntity> projects = new HashSet<>();
     
     public Set<ProjectEntity> getProjects() { 

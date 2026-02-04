@@ -2,7 +2,7 @@ package com.example.todo.dto;
 
 import java.util.List;
 
-// This object will represent the JSON payload from the frontend
+
 public class ProjectCreateRequest {
     private String name;
     private String description;

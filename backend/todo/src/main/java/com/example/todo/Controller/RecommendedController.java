@@ -39,7 +39,7 @@ public class RecommendedController {
                     .map(AssignedTask::getDescription)
                     .collect(Collectors.joining(". "));
 
-            // THIS IS NOW SIMPLER: No need to parse the ID.
+     
             return new EmployeeHistoryDto(employee.getId(), concatenatedDescriptions);
             
         }).collect(Collectors.toList());

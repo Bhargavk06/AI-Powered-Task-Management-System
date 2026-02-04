@@ -18,7 +18,6 @@ public class ProjectEntity {
     @Lob 
     private String description;
 
-    // --- The Many-to-Many Relationship ---
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "project_users", // Name of the intermediate "join" table
@@ -27,7 +26,6 @@ public class ProjectEntity {
     )
     private Set<UserAuthentication> assignedUsers = new HashSet<>();
 
-    // --- Constructors, Getters, and Setters ---
     public ProjectEntity() {}
 
     public Long getId() { return id; }

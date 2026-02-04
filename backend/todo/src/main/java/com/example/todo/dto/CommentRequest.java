@@ -1,4 +1,3 @@
-// src/main/java/com/example/todo/dto/CommentRequest.java
 package com.example.todo.dto;
 
 import java.time.LocalDateTime;
@@ -9,7 +8,7 @@ public class CommentRequest {
     private String content;
     private LocalDateTime timestamp;
 
-    // --- Getters and Setters ---
+
     public Long getTaskId() { return taskId; }
     public void setTaskId(Long taskId) { this.taskId = taskId; }
     public String getUserId() { return userId; }

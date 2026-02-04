@@ -6,6 +6,8 @@ import org.springframework.stereotype.Service;
 import com.example.todo.Notifications;
 import com.example.todo.Repository.NotificationRepository;
 
+import jakarta.transaction.Transactional;
+
 import java.util.List;
 
 @Service
@@ -32,8 +34,23 @@ public class NotificationService {
         return notificationRepository.findByReceiverIdOrderByTimestampDesc(userId);
     }
     
-    public void saveNotification(Notifications notification) {
-        notificationRepository.save(notification);
+    @Transactional // Good practice for update operations
+    public void markAllAsRead(String userId) {
+        List<Notifications> unreadNotifications = notificationRepository.findByReceiverIdAndReadFalse(userId);
+        for (Notifications notification : unreadNotifications) {
+            notification.setRead(true);
+        }
+        notificationRepository.saveAll(unreadNotifications);
+    }
+    
+    @Transactional
+    public void markOneAsRead(Long notificationId) {
+        notificationRepository.findById(notificationId).ifPresent(notification -> {
+            if (!notification.isRead()) {
+                notification.setRead(true);
+                notificationRepository.save(notification);
+            }
+        });
     }
 
 }

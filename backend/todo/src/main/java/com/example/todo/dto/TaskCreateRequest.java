@@ -1,6 +1,6 @@
 package com.example.todo.dto;
 
-// This is a plain Java object (POJO) for transferring data. It is NOT a database entity.
+
 public class TaskCreateRequest {
 
     private String taskname;
@@ -8,7 +8,7 @@ public class TaskCreateRequest {
     private String deadline;
     private String priority;
     
-    // This will hold the ID of the user the task is being assigned TO.
+
     private String assigneeId;
 
 

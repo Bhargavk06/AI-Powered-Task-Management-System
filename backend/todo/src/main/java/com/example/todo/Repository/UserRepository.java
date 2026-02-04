@@ -10,6 +10,7 @@ import com.example.todo.UserAuthentication;
 public interface UserRepository extends JpaRepository<UserAuthentication,String> {
 	Optional<UserAuthentication> findByIdAndPasswordAndRole(String id,String password, String role);
 	public List<UserAuthentication> findByRole(String role);
+	public List<UserAuthentication> findByUsername(String username);
 
 }
 

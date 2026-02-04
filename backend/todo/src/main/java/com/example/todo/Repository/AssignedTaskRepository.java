@@ -19,6 +19,10 @@ public interface AssignedTaskRepository extends JpaRepository<AssignedTask,Long>
 	List<AssignedTask> findTasksByProject(ProjectEntity project);
 	List<AssignedTask> findByAssignee(UserAuthentication user);
 	
+	// Find tasks assigned BY a specific user (assigner)
+	List<AssignedTask> findByAssignedById(String assignedById);
+	List<AssignedTask> findByAssignedByUsername(String assignedByUsername);
+	
 	int countByStatus(String status);
 	
 	@Query("SELECT COUNT(a) FROM AssignedTask a WHERE a.assignee.role = 'employee'")

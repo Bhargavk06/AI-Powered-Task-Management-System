@@ -1,5 +1,6 @@
 package com.example.todo;
 
+
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -18,6 +19,8 @@ public class AssignedTask {
     private String status;
     private String deadline;
     private String priority;
+    
+    private Integer estimatedHours;
 
     @ManyToOne
     @JoinColumn(name = "assignee_id", referencedColumnName = "id")
@@ -108,5 +111,13 @@ public class AssignedTask {
 
     public void setPriority(String priority) {
         this.priority = priority;
+    }
+    
+    public Integer getEstimatedHours() {
+        return estimatedHours;
+    }
+
+    public void setEstimatedHours(Integer estimatedHours) {
+        this.estimatedHours = estimatedHours;
     }
 }

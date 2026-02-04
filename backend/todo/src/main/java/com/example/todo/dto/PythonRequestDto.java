@@ -11,13 +11,13 @@ public class PythonRequestDto {
     @JsonProperty("employees")
     private List<EmployeeHistoryDto> employees;
 
-    // --- ADD THIS CONSTRUCTOR ---
+
     public PythonRequestDto(String taskDescription, List<EmployeeHistoryDto> employees) {
         this.taskDescription = taskDescription;
         this.employees = employees;
     }
 
-    // --- Getters and Setters ---
+
     public String getTaskDescription() {
         return taskDescription;
     }

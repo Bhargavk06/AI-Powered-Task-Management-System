@@ -55,16 +55,14 @@ public class FileController {
     }
 
 
-    // CORRECTED: Endpoint to download a SINGLE file by its unique fileId.
-    // The URL now clearly indicates we are getting a file by its own ID.
+
     @GetMapping("/files/{fileId}")
     public ResponseEntity<byte[]> downloadFile(@PathVariable Long fileId) {
-        // ERROR FIXED: Was incorrectly calling getFilesByTaskId.
-        // Now correctly calls a new service method to get a single file.
+  
         FileEntity fileEntity = fileStorageService.getFile(fileId);
 
         return ResponseEntity.ok()
-                // CHANGED: "attachment" prompts a download. "inline" tries to display it in the browser.
+                
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileEntity.getFilename() + "\"")
                 .contentType(MediaType.parseMediaType(fileEntity.getContentType()))
                 .body(fileEntity.getData());

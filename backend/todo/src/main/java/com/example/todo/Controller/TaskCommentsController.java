@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import com.example.todo.TaskComments;
@@ -33,7 +34,7 @@ public class TaskCommentsController {
    
     @PostMapping("/add")
     public void add(@RequestBody TaskComments comment) {
-        // Save the comment and assign unread statuses
+     
         taskcommentsservice.addComment(comment);
 
         
@@ -53,8 +54,14 @@ public class TaskCommentsController {
     }
 
     
-    @GetMapping("/unread-map/{userId}")
-    public Map<Long, Boolean> getUnreadComments(@PathVariable String userId) {
-        return taskcommentsservice.getUnreadCommentMap(userId);
-    }
+//    @GetMapping("/unread-map/{userId}")
+//    public Map<Long, Boolean> getUnreadComments(@PathVariable String userId) {
+//        return taskcommentsservice.getUnreadCommentMap(userId);
+//    }
+
+	@GetMapping("/unread-map")
+	public Map<Long, Boolean> getUnreadComments(Authentication authentication) {
+		String userId= authentication.getName();
+		return taskcommentsservice.getUnreadCommentMap(userId);
+	}
 }

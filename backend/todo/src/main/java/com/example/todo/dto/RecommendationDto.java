@@ -5,16 +5,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class RecommendationDto {
 
     @JsonProperty("employeeId")
-    private String employeeId; // Changed to String to be consistent
+    private String employeeId; 
 
     @JsonProperty("score")
     private double score;
 
-    // --- Default constructor (good practice for frameworks like Jackson) ---
+
     public RecommendationDto() {
     }
-    
-    // --- Getters and Setters ---
+ 
     public String getEmployeeId() {
         return employeeId;
     }

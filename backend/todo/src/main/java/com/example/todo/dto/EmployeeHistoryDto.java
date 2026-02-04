@@ -10,13 +10,11 @@ public class EmployeeHistoryDto {
     @JsonProperty("pastTaskDescriptions")
     private String pastTaskDescriptions;
 
-    // --- ADD THIS CONSTRUCTOR ---
     public EmployeeHistoryDto(String employeeId, String pastTaskDescriptions) {
         this.employeeId = employeeId;
         this.pastTaskDescriptions = pastTaskDescriptions;
     }
 
-    // --- Getters and Setters (yours were already correct) ---
     public String getEmployeeId() {
         return employeeId;
     }

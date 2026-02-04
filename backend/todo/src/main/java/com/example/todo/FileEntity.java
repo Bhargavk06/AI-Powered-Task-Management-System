@@ -36,18 +36,16 @@ public class FileEntity {
     @JsonIgnore // Prevents infinite loops when serializing to JSON
     private AssignedTask task;
 
-    // 1. A public no-argument constructor (REQUIRED BY JPA)
+    // A public no-argument constructor (REQUIRED BY JPA)
     public FileEntity() {
     }
 
-    // 2. A constructor for your convenience when creating a new file
     public FileEntity(String filename, String contentType, byte[] data) {
         this.filename = filename;
         this.contentType = contentType;
         this.data = data;
     }
 
-    // --- 3. Manual Getters and Setters for all fields ---
 
     public Long getId() {
         return id;
@@ -81,7 +79,7 @@ public class FileEntity {
         this.data = data;
     }
     
- // In FileEntity class
+
     public AssignedTask getTask() {
         return task;
     }
