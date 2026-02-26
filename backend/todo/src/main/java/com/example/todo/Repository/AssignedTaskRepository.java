@@ -18,6 +18,9 @@ public interface AssignedTaskRepository extends JpaRepository<AssignedTask,Long>
 	List<AssignedTask> findByProjectIdAndAssigneeId(Long projectId, String assigneeId);
 	List<AssignedTask> findTasksByProject(ProjectEntity project);
 	List<AssignedTask> findByAssignee(UserAuthentication user);
+	List<AssignedTask> findByAssigneeIdAndStatusNotIgnoreCase(String assigneeId, String status);
+	List<AssignedTask> findByStatusNotIgnoreCase(String status);
+	List<AssignedTask> findByStatusIgnoreCase(String status);
 	
 	// Find tasks assigned BY a specific user (assigner)
 	List<AssignedTask> findByAssignedById(String assignedById);

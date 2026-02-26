@@ -1,11 +1,12 @@
 package com.example.todo.dto;
 
+import java.time.LocalDate;
 
 public class TaskCreateRequest {
 
     private String taskname;
     private String description;
-    private String deadline;
+    private LocalDate deadline;
     private String priority;
     
 
@@ -28,11 +29,11 @@ public class TaskCreateRequest {
         this.description = description;
     }
 
-    public String getDeadline() {
+    public LocalDate getDeadline() {
         return deadline;
     }
 
-    public void setDeadline(String deadline) {
+    public void setDeadline(LocalDate deadline) {
         this.deadline = deadline;
     }
 

@@ -17,7 +17,9 @@ import com.example.todo.Service.TaskAutomationService;
 import com.example.todo.dto.AutomationDto;
 import com.example.todo.dto.AutomationDto.AutomationResponse;
 import com.example.todo.dto.AutomationDto.BulkAutomationRequest;
+import com.example.todo.Service.TaskParsingService;
 import com.example.todo.dto.RecommendationDto;
+import com.example.todo.dto.TaskParseDto;
 
 import java.util.List;
 
@@ -31,6 +33,9 @@ public class TaskAutomationController {
 
     @Autowired
     private TaskAutomationService automationService;
+
+    @Autowired
+    private TaskParsingService taskParsingService;
 
     @PostMapping("/add-to-queue")
     public ResponseEntity<UnassignedTask> addToQueue(
@@ -62,6 +67,11 @@ public class TaskAutomationController {
     public AutomationResponse suggestMulti(@RequestBody BulkAutomationRequest request) {
         return automationService.generateBulkSuggestions(request.tasks());
     }
+
+   @PostMapping("/parse-task")
+public ResponseEntity<?> parseTask(@RequestBody TaskParseDto.ParseRequest request) {
+    return ResponseEntity.ok(taskParsingService.parseTask(request.text()));
+}
 
     @DeleteMapping("/queue/{id}")
     public ResponseEntity<Void> removeFromQueue(@PathVariable Long id) {

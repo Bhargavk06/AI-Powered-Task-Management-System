@@ -1,6 +1,8 @@
 package com.example.todo;
 
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -17,10 +19,47 @@ public class AssignedTask {
     private String taskname;
     private String description;
     private String status;
-    private String deadline;
+    private LocalDate deadline;
     private String priority;
-    
+     private LocalDateTime createdAt;
+    private LocalDateTime startedAt;      // when status first becomes In Progress
+    private LocalDateTime completedAt;
+    private LocalDateTime lastUpdatedAt;
+
+
+    public LocalDateTime getStartedAt() {
+        return startedAt;
+    }
+
+    public void setStartedAt(LocalDateTime startedAt) {
+        this.startedAt = startedAt;
+    }
+
     private Integer estimatedHours;
+
+    public LocalDateTime getLastUpdatedAt() {
+        return lastUpdatedAt;
+    }
+
+    public void setLastUpdatedAt(LocalDateTime lastUpdatedAt) {
+        this.lastUpdatedAt = lastUpdatedAt;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(LocalDateTime completedAt) {
+        this.completedAt = completedAt;
+    }
 
     @ManyToOne
     @JoinColumn(name = "assignee_id", referencedColumnName = "id")
@@ -89,11 +128,11 @@ public class AssignedTask {
         this.status = status;
     }
 
-    public String getDeadline() {
+    public LocalDate getDeadline() {
         return deadline;
     }
 
-    public void setDeadline(String deadline) {
+    public void setDeadline(LocalDate deadline) {
         this.deadline = deadline;
     }
 

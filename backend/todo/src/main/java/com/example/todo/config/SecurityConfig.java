@@ -38,7 +38,7 @@ public class SecurityConfig {
                 
                 .requestMatchers("/api/assistant/**").permitAll()
 
-                .requestMatchers("/api/gemini/automation/**").authenticated() 
+                .requestMatchers("/api/gemini/**").permitAll() 
                 
                 .anyRequest().authenticated()
             )
