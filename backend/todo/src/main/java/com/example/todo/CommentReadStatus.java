@@ -13,9 +13,9 @@ public class CommentReadStatus {
 
     private Long commentId;
     private String userId;
-    private boolean read; // true if the user has read the comment
+    private boolean read; 
 
-    // Getters and Setters
+  
     public Long getId() {
         return id;
     }

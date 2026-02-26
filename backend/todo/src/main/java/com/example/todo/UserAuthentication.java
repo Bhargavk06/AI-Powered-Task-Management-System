@@ -1,14 +1,18 @@
 package com.example.todo;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "users_table")
 public class UserAuthentication {
 
     @Id
-    private String id; // userId — your shared primary key
+    private String id; 
     private String username;
     private String password;
     private String role;
@@ -18,8 +22,20 @@ public class UserAuthentication {
 
     @OneToMany(mappedBy = "assignee", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<AssignedTask> assignedTasks;
+    
+    @ManyToMany(mappedBy = "assignedUsers", fetch = FetchType.LAZY)
+    @JsonIgnore 
+    private Set<ProjectEntity> projects = new HashSet<>();
+    
+    public Set<ProjectEntity> getProjects() { 
+    	return projects; 
+    }
+    
+    public void setProjects(Set<ProjectEntity> projects) { 
+    	this.projects = projects; 
+    }
 
-    // Getters and setters
+ 
     public String getId() {
         return id;
     }
@@ -59,7 +75,7 @@ public class UserAuthentication {
     public void setProfile(Profile profile) {
         this.profile = profile;
         if (profile != null) {
-            profile.setUser(this); // Set back-reference
+            profile.setUser(this); 
         }
     }
 

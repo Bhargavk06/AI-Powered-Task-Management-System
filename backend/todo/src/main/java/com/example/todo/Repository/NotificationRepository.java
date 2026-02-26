@@ -11,4 +11,5 @@ import com.example.todo.Notifications;
 @Repository
 public interface NotificationRepository extends JpaRepository<Notifications, Long> {
     List<Notifications> findByReceiverIdOrderByTimestampDesc(String receiverId);
+    List<Notifications> findByReceiverIdAndReadFalse(String receiverId);
 }

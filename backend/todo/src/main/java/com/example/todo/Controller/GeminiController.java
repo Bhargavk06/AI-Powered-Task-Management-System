@@ -19,6 +19,6 @@ public class GeminiController {
 
     @PostMapping("/api/gemini/ask")
     public String askGemini(@RequestBody GeminiPromptRequest request) {
-        return geminiService.askGemini(request.getPrompt());
+        return geminiService.askGemini(request.getNewPrompt(), request.getHistory());
     }
 }
