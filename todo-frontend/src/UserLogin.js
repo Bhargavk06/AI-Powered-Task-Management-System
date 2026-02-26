@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { User, Lock, Mail, Phone, Briefcase } from 'react-feather'; // Icons for the form
+import { jwtDecode } from 'jwt-decode'; 
 
 function UserAuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -16,7 +17,7 @@ function UserAuthPage() {
   const [error, setError] = useState(''); // Separate state for errors
   const [isLoading, setIsLoading] = useState(false); // Loading state for the button
   
-  const navigate = useNavigate();
+  const navigate = useNavigate(); 
   const { login } = useAuth();
 
   const handleToggle = () => {
@@ -37,31 +38,31 @@ function UserAuthPage() {
     setIsLoading(true);
     setMessage('');
     setError('');
-
-    if (isLogin) {
+  if (isLogin) {
       try {
         const response = await axios.post('http://localhost:8080/user/login', {
-          id: userId,
-          password,
-          role
+          userId: userId, 
+          password: password
         });
-        const authenticatedUser = response.data;
-        if (authenticatedUser && authenticatedUser.id) {
-           const userData = { 
-               userId: authenticatedUser.id, 
-               username: authenticatedUser.username, 
-               role: authenticatedUser.role 
-           };
-           login(userData);
-           if (authenticatedUser.role === 'admin') navigate('/admin');
-           else if (authenticatedUser.role === 'manager') navigate('/manager');
-           else navigate('/emptodo');
+        
+        const { token } = response.data;
+
+        if (token) {
+           const authenticatedUser = login(token);
+           if (authenticatedUser && authenticatedUser.role) {
+             const userRole = authenticatedUser.role;
+             if (userRole === 'admin') navigate('/admin');
+             else if (userRole === 'manager') navigate('/manager');
+             else navigate('/emptodo');
+           } else {
+             setError('Login succeeded but user data could not be read.');
+           }
          } else {
-            setError('Login failed. Invalid credentials.');
+            setError('Login failed. No token received.');
          }
-      } catch (err) {
+      }catch (err) {
         console.error('Login error:', err);
-        setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+        setError(err.response?.data?.error || 'Login failed. Please check your credentials.');
       } finally {
         setIsLoading(false);
       }
@@ -144,7 +145,7 @@ function UserAuthPage() {
           </div>
 
           {/* Role Select */}
-          <div className="relative">
+          {/* <div className="relative">
             <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <select required value={role} onChange={(e) => setRole(e.target.value)}
               className="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -153,7 +154,7 @@ function UserAuthPage() {
               <option value="manager">Manager</option>
               <option value="employee">Employee</option>
             </select>
-          </div>
+          </div> */}
 
           {/* Submit Button */}
           <button type="submit" disabled={isLoading}

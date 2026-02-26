@@ -8,15 +8,19 @@ function TaskComments({ task, userId, onClose }) { // Corrected props
   const taskId = task?.taskId; // Safely get taskId from the task object
 
   useEffect(() => {
-    // Fetch comments only if taskId and userId are available
     if (taskId && userId) {
       fetchComments();
     }
   }, [taskId, userId]);
 
   const fetchComments = () => {
-    // Use the extracted taskId for the API call
-    axios.get(`http://localhost:8080/comments/view/${taskId}/${userId}`)
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert("Authentication Error: Please log in again.");
+        return Promise.reject("No token found");
+    }
+    const headers = { 'Authorization': `Bearer ${token}` };
+    axios.get(`http://localhost:8080/comments/view/${taskId}/${userId}`, {headers})
       .then((response) => {
          console.log("Fetched comments:", response.data);
         setComments(response.data);
@@ -27,6 +31,12 @@ function TaskComments({ task, userId, onClose }) { // Corrected props
   };
 
   const handleComment = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert("Authentication Error: Please log in again.");
+        return Promise.reject("No token found");
+    }
+    const headers = { 'Authorization': `Bearer ${token}` };
     // Prevent sending empty comments
     if (!sendComment.trim()) return;
 
@@ -37,7 +47,7 @@ function TaskComments({ task, userId, onClose }) { // Corrected props
       timestamp: new Date().toISOString()
     };
 
-    axios.post(`http://localhost:8080/comments/add`, newComment)
+    axios.post(`http://localhost:8080/comments/add`, newComment, {headers})
       .then(() => {
         setSendComment("");
         fetchComments(); // Refresh comments after sending

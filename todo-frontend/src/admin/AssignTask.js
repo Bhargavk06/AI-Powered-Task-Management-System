@@ -7,7 +7,7 @@ import Icon from '../components/AppIcon';
 import { X, Type, AlignLeft, Calendar, Plus, ArrowLeft } from 'react-feather';
 // At the top of AssignTask.js
 import useConfirmationModal from '../components/useConfirmationModal'; // Adjust path if needed
-
+import { useAuth } from '../context/AuthContext';
 
 // Helper functions (keep these)
 const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
@@ -15,17 +15,17 @@ const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
 
 function AssignTask() {
   const { id } = useParams();
-  const userId = localStorage.getItem('userId');
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [unreadMap, setUnreadMap] = useState({});
-  const [isFormOpen, setIsFormOpen] = useState(false); 
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [taskName, setTaskName] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState('To Do');
   const [deadline, setDeadline] = useState('');
   const [tasks, setTasks] = useState([]);
-  const [task,setTask] = useState([]);
+  const [task, setTask] = useState([]);
   const [priority, setPriority] = useState('medium');
   const [expandedTaskId, setExpandedTaskId] = useState(null);
 
@@ -39,14 +39,14 @@ function AssignTask() {
   const inProgressTasks = tasks.filter(t => t.status === 'In Progress').length;
   const completedTasks = tasks.filter(t => t.status === 'Done').length;
   const overdueTasks = tasks.filter(t => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const taskDate = new Date(t.deadline);
-      taskDate.setHours(0, 0, 0, 0);
-      return taskDate < today && t.status !== 'Done';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const taskDate = new Date(t.deadline);
+    taskDate.setHours(0, 0, 0, 0);
+    return taskDate < today && t.status !== 'Done';
   }).length;
 
-    // State for Calendar
+  // State for Calendar
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
@@ -60,44 +60,75 @@ function AssignTask() {
 
   const [selectedTask, setSelectedTask] = useState(null); //  Track selected task for viewing comments
 
+  const statusColumns = [
+    { title: 'To Do', color: 'bg-gray-100 dark:bg-gray-800' },
+    { title: 'In Progress', color: 'bg-blue-100 dark:bg-blue-900' },
+    { title: 'In Review', color: 'bg-yellow-100 dark:bg-yellow-900' },
+    { title: 'Done', color: 'bg-green-100 dark:bg-green-900' }
+  ];
+
   const fetchData = () => {
-    axios.get(`http://localhost:8080/assigntask/gettask/${id}`)
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert("Authentication Error: Please log in again.");
+      return Promise.reject("No token found");
+    }
+    const headers = { 'Authorization': `Bearer ${token}` };
+
+    axios.get(`http://localhost:8080/assigntask/gettask/${id}`, { headers })
       .then((response) => setTasks(response.data))
       .catch((error) => console.error("Fetching Error: ", error));
 
-    axios.get(`http://localhost:8080/comments/unread-map/${userId}`)
+    axios.get(`http://localhost:8080/comments/unread-map`, { headers })
       .then((res) => setUnreadMap(res.data))
       .catch((err) => console.log("Error loading unread map", err));
   };
 
 
   useEffect(() => {
+    if (!user || !user.userId) {
+      return;
+    }
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert("Authentication Error: Please log in again.");
+      return Promise.reject("No token found");
+    }
+    const headers = { 'Authorization': `Bearer ${token}` };
+
     const fetchTasks = () => {
       axios
-        .get(`http://localhost:8080/assigntask/gettask/${id}`)
+        .get(`http://localhost:8080/assigntask/gettask/${id}`, { headers })
         .then((response) => setTasks(response.data))
         .catch((error) => console.error("Fetching Error: ", error));
     };
 
     const fetchUnreadMap = () => {
       axios
-        .get(`http://localhost:8080/comments/unread-map/${userId}`)
+        .get(`http://localhost:8080/comments/unread-map`, { headers })
         .then((res) => setUnreadMap(res.data))
         .catch((err) => console.log("Error loading unread map", err));
     };
 
     fetchTasks();
     fetchUnreadMap();
-  }, [id, userId]); // Depend on userId as well for fetching the unread map
+  }, [id, user]);
 
   const handleLogout = () => {
     navigate('/UserLogin');
   };
 
-   const handleAssign = (e) => {
+  const handleAssign = (e) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert("Authentication Error: Please log in again.");
+      return Promise.reject("No token found");
+    }
+    const headers = { 'Authorization': `Bearer ${token}` };
+
     e.preventDefault();
     const newTask = { taskname: taskName, description, deadline, priority, status: 'To Do' };
-    axios.post(`http://localhost:8080/assigntask/assign/${id}?assignerId=${userId}`, newTask)
+    axios.post(`http://localhost:8080/assigntask/assign/${id}`, newTask, { headers })
       .then(() => {
         fetchData(); // Refresh the list
         resetForm(); // This will now be called on success
@@ -110,21 +141,24 @@ function AssignTask() {
   };
 
   const handleUpdate = (e) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert("Authentication Error: Please log in again.");
+      return Promise.reject("No token found");
+    }
+    const headers = { 'Authorization': `Bearer ${token}` };
+
     e.preventDefault();
     const updatedTask = { taskId: editTaskId, taskname: taskName, description, status, deadline, priority };
-    axios.put(`http://localhost:8080/assigntask/updateTask/${editTaskId}`, updatedTask)
-      .then(() => axios.get(`http://localhost:8080/assigntask/gettask/${id}`))
+    axios.put(`http://localhost:8080/assigntask/updateTask/${editTaskId}`, updatedTask, { headers })
+      .then(() => axios.get(`http://localhost:8080/assigntask/gettask/${id}`, { headers }))
       .then((response) => {
         setTasks(response.data);
         resetForm();
       })
       .catch((error) => {
-        // --- THIS IS THE CRITICAL IMPROVEMENT ---
         console.error("Error updating task:", error);
-        
-        // Check if the backend sent a specific error message
         if (error.response && error.response.data) {
-          // Assuming the backend sends an object like { message: "Error details" }
           alert(`Failed to update task: ${error.response.data.message || 'Check console for details.'}`);
         } else {
           alert("Failed to update task. See the console for more details.");
@@ -132,47 +166,60 @@ function AssignTask() {
       });
   };
 
-    const handleStatusChange = async (taskId, newStatus) => {
+  const handleStatusChange = async (taskId, newStatus) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert("Authentication Error: Please log in again.");
+      return Promise.reject("No token found");
+    }
+    const headers = { 'Authorization': `Bearer ${token}` };
+
+
     try {
-      await axios.put('http://localhost:8080/assigntask/updateStatus', {
+      await axios.put(`http://localhost:8080/assigntask/updateStatus`, {
         taskId: taskId,
         status: newStatus
-      });
-      setTasks(prev =>
-        prev.map(t => t.taskId === taskId ? { ...t, status: newStatus } : t)
-      );
-      // alert("Status updated!");
+      }, { headers });
+
+      fetchData(); // Re-fetch data to show the change
     } catch (error) {
       console.error("Failed to update status", error);
     }
   };
 
 
- const handleBack = () => {
+  const handleBack = () => {
     navigate(-1);
   };
-  
+
   const deleteTaskAction = (taskId) => {
-    return axios.delete(`http://localhost:8080/assigntask/deleteTask/${taskId}`)
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert("Authentication Error: Please log in again.");
+      return Promise.reject("No token found");
+    }
+    const headers = { 'Authorization': `Bearer ${token}` };
+
+    return axios.delete(`http://localhost:8080/assigntask/deleteTask/${taskId}`, { headers })
       .then(() => {
         setTasks(currentTasks => currentTasks.filter(task => task.taskId !== taskId));
       })
       .catch((error) => {
         console.error("Error deleting the task:", error);
-        alert("Failed to delete the task."); // Optional: show an error
-        throw error; // Propagate the error to the modal
+        alert("Failed to delete the task."); 
+        throw error; 
       });
-};
+  };
 
-const [askForDeleteConfirmation, DeleteConfirmationModal] = useConfirmationModal({
+  const [askForDeleteConfirmation, DeleteConfirmationModal] = useConfirmationModal({
     onConfirm: deleteTaskAction,
     title: "Delete Task",
     message: "Are you sure you want to delete this task? This cannot be undone.",
     confirmText: "Delete",
-});
+  });
 
   const editTask = (taskToEdit) => {
-   // const taskToEdit = tasks.find(task => task.taskId === taskId);
+    // const taskToEdit = tasks.find(task => task.taskId === taskId);
     if (taskToEdit) {
       setTaskName(taskToEdit.taskname);
       setDescription(taskToEdit.description);
@@ -200,8 +247,15 @@ const [askForDeleteConfirmation, DeleteConfirmationModal] = useConfirmationModal
   };
 
   const openCommentsModal = async (t) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert("Authentication Error: Please log in again.");
+      return Promise.reject("No token found");
+    }
+    const headers = { 'Authorization': `Bearer ${token}` };
+
     try {
-      await axios.get(`http://localhost:8080/comments/view/${t.taskId}/${userId}`);
+      await axios.get(`http://localhost:8080/comments/view/${t.taskId}/${user.userId}`, { headers });
       setUnreadMap((prev) => ({ ...prev, [t.taskId]: false }));
       setSelectedTask(t);
     } catch (err) {
@@ -245,11 +299,11 @@ const [askForDeleteConfirmation, DeleteConfirmationModal] = useConfirmationModal
     const matchesEndDate = endDate ? new Date(task.deadline) <= new Date(endDate) : true;
 
     if (searchTerm &&
-        !(task.taskname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          task.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          task.assignedTo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          task.priority?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          task.status?.toLowerCase().includes(searchTerm.toLowerCase()))) {
+      !(task.taskname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.assignedTo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.priority?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.status?.toLowerCase().includes(searchTerm.toLowerCase()))) {
       return false;
     }
 
@@ -267,7 +321,6 @@ const [askForDeleteConfirmation, DeleteConfirmationModal] = useConfirmationModal
     return acc;
   }, {});
 
-  const statusColumns = ['To Do', 'In Progress', 'Done'];
 
   // --- Calendar Logic ---
   const getPriorityDotColor = (priority) => {
@@ -355,7 +408,7 @@ const [askForDeleteConfirmation, DeleteConfirmationModal] = useConfirmationModal
 
 
   return (
-        <div className="p-8 bg-gray-50 min-h-screen">
+    <div className="p-8 bg-gray-50 min-h-screen">
       {/* --- 1. HEADER SECTION --- */}
       {/* This flex container correctly aligns the title on the left and the button on the right */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
@@ -411,21 +464,21 @@ const [askForDeleteConfirmation, DeleteConfirmationModal] = useConfirmationModal
                 </div>
               </div>
 
-               {isEditing && (
-      <div className="md:col-span-2"> {/* Make it span full width if desired */}
-        <label className="block text-sm font-medium text-gray-600 mb-1">Status</label>
-        <select
-          value={status}
-          onChange={e => setStatus(e.target.value)}
-          className="w-full py-2.5 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        >
-          <option value="To Do">To Do</option>
-          <option value="In Progress">In Progress</option>
-          <option value="Done">Done</option>
-        </select>
-      </div>
-    )}
-  
+              {isEditing && (
+                <div className="md:col-span-2"> {/* Make it span full width if desired */}
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Status</label>
+                  <select
+                    value={status}
+                    onChange={e => setStatus(e.target.value)}
+                    className="w-full py-2.5 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="To Do">To Do</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Done">Done</option>
+                  </select>
+                </div>
+              )}
+
               <div className="flex justify-end">
                 <button type="submit" className="px-6 py-2.5 font-semibold text-white bg-indigo-600 rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">{isEditing ? 'Save Changes' : 'Assign Task'}</button>
               </div>
@@ -469,40 +522,40 @@ const [askForDeleteConfirmation, DeleteConfirmationModal] = useConfirmationModal
 
         {/* Start Date Input */}
         <div className="flex-grow min-w-[180px]">
-            <label htmlFor="start-date" className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">From</label>
-            <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Icon name="Calendar" size={16} className="text-gray-400" />
-                </span>
-                <input
-                    id="start-date"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border rounded-lg bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 transition"
-                />
-            </div>
+          <label htmlFor="start-date" className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">From</label>
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <Icon name="Calendar" size={16} className="text-gray-400" />
+            </span>
+            <input
+              id="start-date"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border rounded-lg bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 transition"
+            />
+          </div>
         </div>
 
         {/* End Date Input */}
         <div className="flex-grow min-w-[180px]">
-            <label htmlFor="end-date" className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">To</label>
-            <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Icon name="Calendar" size={16} className="text-gray-400" />
-                </span>
-                <input
-                    id="end-date"
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border rounded-lg bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 transition"
-                />
-            </div>
+          <label htmlFor="end-date" className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">To</label>
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <Icon name="Calendar" size={16} className="text-gray-400" />
+            </span>
+            <input
+              id="end-date"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border rounded-lg bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 transition"
+            />
+          </div>
         </div>
-        </div>
+      </div>
 
-          <div className="flex flex-wrap justify-between items-center mb-5 gap-4">
+      <div className="flex flex-wrap justify-between items-center mb-5 gap-4">
         {/* View Toggle Buttons */}
         <div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700 shadow-sm">
           <button
@@ -510,14 +563,14 @@ const [askForDeleteConfirmation, DeleteConfirmationModal] = useConfirmationModal
                       ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-transparent text-gray-700 dark:text-gray-50 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             onClick={() => setViewMode('list')}
           >
-             <Icon name="List" size={16} className="inline-block mr-1" /> List View
+            <Icon name="List" size={16} className="inline-block mr-1" /> List View
           </button>
           <button
             className={`px-4 py-2 text-sm cursor-pointer transition-all duration-200 border-r border-gray-300 dark:border-gray-700
                       ${viewMode === 'kanban' ? 'bg-blue-600 text-white' : 'bg-transparent text-gray-700 dark:text-gray-50 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             onClick={() => setViewMode('kanban')}
           >
-             <Icon name="LayoutDashboard" size={16} className="inline-block mr-1" /> Kanban Board
+            <Icon name="LayoutDashboard" size={16} className="inline-block mr-1" /> Kanban Board
           </button>
           <button
             className={`px-4 py-2 text-sm cursor-pointer transition-all duration-200
@@ -553,50 +606,50 @@ const [askForDeleteConfirmation, DeleteConfirmationModal] = useConfirmationModal
       {/* Task List */}
 
 
-       {/* Conditional Rendering based on viewMode */}
+      {/* Conditional Rendering based on viewMode */}
       {viewMode === 'list' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
-            {filteredTasks.length > 0 ? (
-              filteredTasks.map((task) => (
-                <TaskCard
-                  key={task.taskId}
-                  task={task}
-                  openCommentsModal={openCommentsModal}
-                  onEdit={editTask}
-                  onDelete={askForDeleteConfirmation}
-                  unreadComments={unreadMap[task.taskId]}
-                />
-              ))
-            ) : (
-              <p className="text-center text-gray-500 col-span-full">No tasks found.</p>
-            )}
+          {filteredTasks.length > 0 ? (
+            filteredTasks.map((task) => (
+              <TaskCard
+                key={task.taskId}
+                task={task}
+                openCommentsModal={openCommentsModal}
+                onStatusChange={handleStatusChange}
+                onEdit={editTask}
+                onDelete={askForDeleteConfirmation}
+                unreadComments={unreadMap[task.taskId]}
+              />
+            ))
+          ) : (
+            <p className="text-center text-gray-500 col-span-full">No tasks found.</p>
+          )}
         </div>
       )}
 
       {viewMode === 'kanban' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 mt-4">
-          {statusColumns.map(status => (
-            <div key={status} className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 min-h-[300px] flex flex-col shadow-sm">
-              <h4 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-50 text-center">
-                {status} ({tasksByStatus[status]?.length || 0})
-              </h4>
-              <div className="flex-grow flex flex-col gap-3 min-h-[50px]">
-                {tasksByStatus[status] && tasksByStatus[status].length > 0 ? (
-                  tasksByStatus[status].map(t => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
+          {statusColumns.map((column) => (
+            (tasksByStatus[column.title] || ['To Do', 'In Progress', 'In Review'].includes(column.title)) && (
+              <div key={column.title} className={`${column.color} rounded-lg p-4 flex flex-col shadow-sm`}>
+                <h4 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-50 text-center">
+                  {column.title} ({tasksByStatus[column.title]?.length || 0})
+                </h4>
+                <div className="flex-grow flex flex-col gap-4 min-h-[200px]">
+                  {tasksByStatus[column.title]?.map(t => (
                     <TaskCard
                       key={t.taskId}
                       task={t}
                       openCommentsModal={openCommentsModal}
                       unreadComments={unreadMap[t.taskId]}
+                      onStatusChange={handleStatusChange}
                       onEdit={editTask}
                       onDelete={askForDeleteConfirmation}
                     />
-                  ))
-                ) : (
-                  <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-5">No tasks in this column.</p>
-                )}
+                  ))}
+                </div>
               </div>
-            </div>
+            )
           ))}
         </div>
       )}
@@ -637,189 +690,18 @@ const [askForDeleteConfirmation, DeleteConfirmationModal] = useConfirmationModal
       {selectedTask && (
         <TaskComments
           task={selectedTask}
-          userId={userId}
+          userId={user.userId}
           onClose={() => setSelectedTask(null)}
           onCommentAdded={() => {
             // Optionally refresh comments or update unread status
           }}
         />
       )}
-       <DeleteConfirmationModal />
+      <DeleteConfirmationModal />
     </div> // Closing div for the main component
   );
 }
 
-
-const styles = {
-
-  modalOverlay: {
-    position: 'fixed',
-    top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000
-  },
-  modalBox: {
-    backgroundColor: '#fff',
-    padding: '25px',
-    borderRadius: '10px',
-    width: '600px',
-    maxHeight: '80vh',
-    overflowY: 'auto',
-    boxShadow: '0 0 10px rgba(0,0,0,0.25)'
-  },
-  selectMenu: {
-    backgroundColor: '#1890ff',
-    color: 'white',
-    padding: '8px 12px',
-    fontSize: '14px',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    width: '150px',
-    marginTop: '10px'
-  },
-  redDot: {
-    display: 'inline-block',
-    width: '8px',
-    height: '8px',
-    backgroundColor: 'red',
-    borderRadius: '50%',
-    marginLeft: '6px',
-    verticalAlign: 'middle'
-  },
-  viewBtn: {
-    padding: '8px 16px',
-    marginRight: '10px',
-    marginLeft: '10px',
-    backgroundColor: '#13c2c2',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontWeight: '500',
-    transition: 'background 0.2s',
-  },
-  deleteBtn: {
-    padding: '8px 16px',
-    backgroundColor: '#ff4d4f',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontWeight: '500',
-    transition: 'background 0.2s',
-  },
-  editBtn: {
-    padding: '8px 16px',
-    marginRight: '10px',
-    backgroundColor: '#1890ff',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontWeight: '500',
-    transition: 'background 0.2s',
-  },
-  backBtn: {
-    padding: '8px 16px',
-    marginRight: '10px',
-    backgroundColor: '#1890ff',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontWeight: '500',
-    transition: 'background 0.2s',
-  },
-  addTaskBtn: {
-    padding: '8px 16px',
-    margin: '20px',
-    marginRight: '10px',
-    backgroundColor: '#1890ff',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontWeight: '500',
-    transition: 'background 0.2s',
-  },
-  redDot: {
-    display: 'inline-block',
-    width: '8px',
-    height: '8px',
-    backgroundColor: 'red',
-    borderRadius: '50%',
-    marginLeft: '6px',
-    verticalAlign: 'middle'
-  },
-  form: {
-    display: 'inline-block',
-    textAlign: 'left',
-    padding: '20px',
-    border: '1px solid #ccc',
-    borderRadius: '10px',
-    marginBottom: '30px',
-    backgroundColor: '#f9f9f9',
-    width: '350px',
-  },
-  formGroup: {
-    marginBottom: '15px',
-  },
-  label: {
-    display: 'block',
-    marginBottom: '6px',
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  input: {
-    width: '100%',
-    padding: '8px 10px',
-    borderRadius: '6px',
-    border: '1px solid #ccc',
-    fontSize: '14px',
-    boxSizing: 'border-box',
-  },
-  textarea: {
-    width: '100%',
-    padding: '8px 10px',
-    borderRadius: '6px',
-    border: '1px solid #ccc',
-    fontSize: '14px',
-    resize: 'vertical',
-    boxSizing: 'border-box',
-  },
-  select: {
-    width: '100%',
-    padding: '8px 10px',
-    borderRadius: '6px',
-    border: '1px solid #ccc',
-    fontSize: '14px',
-    backgroundColor: '#fff',
-    boxSizing: 'border-box',
-  },
-  button: {
-    padding: '8px 16px',
-    backgroundColor: '#1890ff',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontWeight: '500',
-  },
-  cancelButton: {
-    padding: '8px 16px',
-    backgroundColor: '#ff4d4f',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontWeight: '500',
-    marginLeft: '10px',
-  }
-}
 
 export default AssignTask;
 

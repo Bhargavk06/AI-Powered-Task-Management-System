@@ -1,28 +1,35 @@
-// src/manager/ManagerProjects.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Search, Archive } from 'react-feather';
 import { useAuth } from '../context/AuthContext'; // To get the logged-in manager's ID
-import ProjectCard from '../projects/ProjectCard'; // Reuse the same card component
+import ProjectCard from '../projects/ProjectCard'; 
 
 function ManagerProjects() {
   const [projects, setProjects] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
-  const { user } = useAuth(); // Get user info from your Auth Context
+  const { user } = useAuth(); 
 
   useEffect(() => {
-    // Don't fetch if the user isn't logged in yet
     if (!user || !user.userId) {
         setIsLoading(false);
         return;
     }
 
+    const token = localStorage.getItem('token');
+    if (!token) {
+        console.error("Authentication Error: No token found.");
+        setIsLoading(false);
+        return;
+    }
+    const headers = {
+        'Authorization': `Bearer ${token}`
+      };
     setIsLoading(true);
-    // Use the new, user-specific endpoint
-    axios.get(`http://localhost:8080/projects/user/${user.userId}`)
+    
+    axios.get(`http://localhost:8080/projects/user/${user.userId}`, { headers })
       .then(response => {
         setProjects(response.data);
       })

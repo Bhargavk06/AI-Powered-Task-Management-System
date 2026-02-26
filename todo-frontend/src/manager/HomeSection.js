@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Users, Briefcase, Folder, CheckSquare } from 'react-feather'; // Import icons
-import { useParams} from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 // A reusable StatCard component for a clean and scalable dashboard
 const StatCard = ({ icon, title, value, isLoading, color = 'emerald' }) => {
   const Icon = icon;
@@ -42,6 +42,7 @@ const StatCard = ({ icon, title, value, isLoading, color = 'emerald' }) => {
 
 
 function HomeSection() {
+  const { user } = useAuth();
   const [stats, setStats] = useState({
     employeeCount: 0,
     managerCount: 0,
@@ -49,18 +50,32 @@ function HomeSection() {
     taskCount: 0,    // Added for future expansion
   });
   const [isLoading, setIsLoading] = useState(true);
-  const userId = localStorage.getItem('userId');
 
   useEffect(() => {
-    // Use Promise.all to fetch all data concurrently for better performance
+    const userId = user?.userId;
+     if (!userId) {
+        setIsLoading(false);
+        return;
+    }
     const fetchAllStats = async () => {
       setIsLoading(true);
-      try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error("Authentication Error: No token found.");
+        setIsLoading(false);
+        return;
+      }
+
+      const headers = {
+        'Authorization': `Bearer ${token}`
+      };
+     try {
+        // ✅ FIX: Add the { headers } object to every single API call.
         const [employeesRes, managersRes, projectsRes, tasksRes] = await Promise.all([
-          axios.get(`http://localhost:8080/profile/employees`),
-          axios.get(`http://localhost:8080/profile/managers`),
-          axios.get(`http://localhost:8080/projects/user/${userId}`),
-          axios.get(`http://localhost:8080/assigntask/getincompletetask/${userId}`)
+          axios.get(`http://localhost:8080/profile/employees`, { headers }),
+          axios.get(`http://localhost:8080/profile/managers`, { headers }),
+          axios.get(`http://localhost:8080/projects/user/${userId}`, { headers }),
+          axios.get(`http://localhost:8080/assigntask/getincompletetask/${userId}`, { headers })
         ]);
 
         setStats({
@@ -70,7 +85,7 @@ function HomeSection() {
           taskCount: Array.isArray(tasksRes.data) ? tasksRes.data.length : 0,
         });
 
-      } catch (error) {
+      }catch (error) {
         console.error('Error fetching dashboard stats:', error);
       } finally {
         setIsLoading(false);
@@ -78,7 +93,9 @@ function HomeSection() {
     };
 
     fetchAllStats();
-  }, [userId]); // Runs once when component mounts
+  }, [user]); // Runs once when component mounts
+
+  const username = user?.username;
 
   return (
     // Main container with consistent padding and background
@@ -87,7 +104,7 @@ function HomeSection() {
 
         {/* Welcome Header */}
         <div>
-          <h1 className="text-3xl font-bold text-slate-800">Welcome Back!</h1>
+          <h1 className="text-3xl font-bold text-slate-800">Welcome, {username} !</h1>
           <p className="text-slate-500 mt-1">Here's a summary of your workspace.</p>
         </div>
 
@@ -131,6 +148,5 @@ function HomeSection() {
   );
 }
 
-// The old 'styles' object is no longer needed.
 
 export default HomeSection;

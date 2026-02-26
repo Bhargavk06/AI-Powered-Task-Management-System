@@ -25,6 +25,13 @@ const NewTaskModal = ({ projectId, userId, initialData, onClose, onTaskSaved }) 
   }, [initialData, isEditing]);
 
   const handleSubmit = (e) => {
+    const token = localStorage.getItem('token');
+    if(!token){
+        alert("Authentication Error: Please log in again.");
+        setIsLoading(false);
+        return;
+    }
+    const headers= {'Authorization': `Bearer ${token}`};
     e.preventDefault();
     setIsLoading(true);
 
@@ -34,19 +41,13 @@ const NewTaskModal = ({ projectId, userId, initialData, onClose, onTaskSaved }) 
       deadline,
       priority,
       assigneeId: userId,
-    };
+    };  
 
-    const assignerId = localStorage.getItem('userId');
-    if (!assignerId) {
-        alert("Could not find logged-in user ID. Please log in again.");
-        setIsLoading(false);
-        return;
-    }
 
     // Choose the correct API endpoint and method (POST for create, PUT for update)
     const request = isEditing
-      ? axios.put(`http://localhost:8080/assigntask/updateTask`, { ...taskData, taskId: initialData.taskId })
-      : axios.post(`http://localhost:8080/assigntask/projects/${projectId}/tasks?assignerId=${assignerId}`, taskData);
+      ? axios.put(`http://localhost:8080/assigntask/updateTask`, { ...taskData, taskId: initialData.taskId }, {headers})
+      : axios.post(`http://localhost:8080/assigntask/projects/${projectId}/tasks`, taskData, {headers});
     request
       .then(() => {
         onTaskSaved(); // Tell the parent page to refresh its data

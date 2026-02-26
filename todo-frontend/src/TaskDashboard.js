@@ -12,10 +12,16 @@ const TaskDashboard = () => {
 
   // FETCH TASKS: Corrected to use your specific endpoint
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert("Authentication Error: Please log in again.");
+        return Promise.reject("No token found");
+    }
+    const headers = { 'Authorization': `Bearer ${token}` };
     // Make sure user and user.userId are available before fetching
     if (user?.userId) {
       // API CALL CORRECTION 1: Using your GET endpoint
-      axios.get(`http://localhost:8080/assigntask/gettask/${user.userId}`)
+      axios.get(`http://localhost:8080/assigntask/gettask/${user.userId}`, {headers})
         .then(response => {
           setTasks(response.data);
         })
@@ -23,10 +29,14 @@ const TaskDashboard = () => {
     }
   }, [user]); // Re-run if the user object changes
 
-  // DELETE TASK: Corrected to use your specific endpoint
   const deleteTaskAction = (taskId) => {
-    // API CALL CORRECTION 2: Using your DELETE endpoint
-    return axios.delete(`http://localhost:8080/assigntask/deleteTask/${taskId}`)
+     const token = localStorage.getItem('token');
+    if (!token) {
+        alert("Authentication Error: Please log in again.");
+        return Promise.reject("No token found");
+    }
+    const headers = { 'Authorization': `Bearer ${token}` };
+    return axios.delete(`http://localhost:8080/assigntask/deleteTask/${taskId}`, {headers})
       .then(() => {
         setTasks(currentTasks => currentTasks.filter(task => task.taskId !== taskId));
       })
@@ -36,10 +46,15 @@ const TaskDashboard = () => {
       });
   };
   
-  // UPDATE STATUS: This function will be passed to the TaskCard
+
   const handleStatusChange = (taskId, newStatus) => {
-    // API CALL CORRECTION 3: Using your PUT endpoint for status updates
-    axios.put(`http://localhost:8080/assigntask/updateStatus`, { taskId, status: newStatus })
+     const token = localStorage.getItem('token');
+    if (!token) {
+        alert("Authentication Error: Please log in again.");
+        return Promise.reject("No token found");
+    }
+    const headers = { 'Authorization': `Bearer ${token}` };
+    axios.put(`http://localhost:8080/assigntask/updateStatus`, { taskId, status: newStatus }, {headers})
         .then(() => {
             // Update the status in the local state for an immediate UI response
             setTasks(currentTasks => currentTasks.map(task => 

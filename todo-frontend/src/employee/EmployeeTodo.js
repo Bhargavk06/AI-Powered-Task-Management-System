@@ -1,16 +1,16 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import AdminDashboard from './AdminDashboard';
+import EmployeeDashboard from './EmployeeDashboard';
 import { NotificationProvider } from '../notifications/NotificationProvider';
 import { useAuth } from '../context/AuthContext';
 
-function AdminTodo() {
+function EmployeeTodo() {
   const { user } = useAuth();
   
   return (
     <NotificationProvider userId={user?.userId}>
       <div className="flex h-screen bg-white antialiased">
-        <AdminDashboard />
+        <EmployeeDashboard />
         <main className="flex-1 overflow-y-auto bg-slate-100">
           <Outlet />
         </main>
@@ -19,4 +19,4 @@ function AdminTodo() {
   );
 }
 
-export default AdminTodo;
+export default EmployeeTodo;

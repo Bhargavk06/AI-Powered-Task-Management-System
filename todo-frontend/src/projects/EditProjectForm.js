@@ -16,17 +16,25 @@ function EditProjectForm() {
   const [isDataLoading, setIsDataLoading] = useState(true);
 
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        console.error("Authentication Error: No token found.");
+        setIsDataLoading(false);
+        return;
+    }
+    const headers = { 'Authorization': `Bearer ${token}` };
+
     // Fetch all users for the dropdown AND the project data to pre-fill the form
     const fetchAllData = async () => {
         try {
-            const usersResponse = await axios.get('http://localhost:8080/user/all');
+            const usersResponse = await axios.get('http://localhost:8080/user/all', {headers});
             const formattedUsers = usersResponse.data.map(user => ({ 
                 value: user.id, 
                 label: `${user.username} (${user.role})` 
             }));
             setUserOptions(formattedUsers);
 
-            const projectResponse = await axios.get(`http://localhost:8080/projects/${projectId}`);
+            const projectResponse = await axios.get(`http://localhost:8080/projects/${projectId}`, {headers});
             const project = projectResponse.data;
 
             setProjectName(project.name);
@@ -49,6 +57,13 @@ function EditProjectForm() {
   }, [projectId]);
 
   const handleSubmit = (event) => {
+    const token = localStorage.getItem('token');
+    if(!token){
+      alert("Authentication Error: Please log in again.");
+      setIsLoading(false);
+      return;
+    }
+    const headers = {'Authorization':`Bearer ${token}`}
     event.preventDefault();
     setIsLoading(true);
     const updatedData = {
@@ -57,7 +72,7 @@ function EditProjectForm() {
       userIds: selectedUsers.map(u => u.value),
     };
 
-    axios.put(`http://localhost:8080/projects/${projectId}`, updatedData)
+    axios.put(`http://localhost:8080/projects/${projectId}`, updatedData, {headers})
       .then(() => navigate('/admin/projects'))
       .catch(error => {
         console.error("Error updating project:", error);

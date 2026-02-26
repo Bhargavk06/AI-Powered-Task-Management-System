@@ -14,8 +14,15 @@ function ProjectSection() {
   const navigate = useNavigate();
 
   const fetchProjects = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        console.error("Authentication Error: No token found.");
+        setIsLoading(false);
+        return;
+    }
+    const headers = { 'Authorization': `Bearer ${token}` };
     setIsLoading(true);
-    axios.get('http://localhost:8080/projects')
+    axios.get('http://localhost:8080/projects',{headers})
       .then(response => setAllProjects(response.data))
       .catch(error => console.error("Error fetching projects:", error))
       .finally(() => setIsLoading(false));
@@ -32,7 +39,14 @@ function ProjectSection() {
   // --- UPGRADED DELETE LOGIC ---
   // This uses the same professional confirmation modal as your other pages.
   const deleteProjectAction = (projectId) => {
-    return axios.delete(`http://localhost:8080/projects/${projectId}`)
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert("Authentication Error: Please log in again.");
+        return Promise.reject("No token found");
+    }
+    const headers = { 'Authorization': `Bearer ${token}` };
+
+    return axios.delete(`http://localhost:8080/projects/${projectId}`,{headers})
       .then(() => {
         setAllProjects(prevProjects => prevProjects.filter(p => p.id !== projectId));
       })
