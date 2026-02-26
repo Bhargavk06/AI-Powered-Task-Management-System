@@ -7,8 +7,9 @@ import {
   Cpu, 
   BarChart2, 
   Bell, 
+  MessageSquare,
   LogOut,
-  Settings // Example for a future settings link
+  Settings 
 } from 'react-feather';
 import { useNotifications } from '../notifications/NotificationProvider'; 
 
@@ -36,7 +37,7 @@ function AdminDashboard() {
       <div className="p-4 border-b border-slate-200">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
-            <span className="text-xl font-bold text-white">T</span> {/* Replace with your logo/initial */}
+            <span className="text-xl font-bold text-white">T</span>
           </div>
           <h1 className="text-lg font-bold text-slate-800">Admin Panel</h1>
         </div>
@@ -44,7 +45,7 @@ function AdminDashboard() {
 
       {/* 2. Main Navigation Links */}
       <nav className="flex-1 p-4 flex flex-col space-y-1">
-        <NavLink to="/admin" className={getLinkClass} end> {/* `end` prop for exact match */}
+        <NavLink to="/admin" className={getLinkClass} end>
           <Home size={20} />
           <span>Home</span>
         </NavLink>
@@ -61,7 +62,6 @@ function AdminDashboard() {
           <span>Projects</span>
         </NavLink>
         
-        {/* A subtle separator and heading for a new group */}
         <div className="pt-4 pb-2 px-3">
             <span className="text-xs font-semibold text-slate-400 uppercase">Tools & Reports</span>
         </div>
@@ -70,9 +70,13 @@ function AdminDashboard() {
           <BarChart2 size={20} />
           <span>Recommender</span>
         </NavLink>
-        <NavLink to="/admin/task-summary" className={getLinkClass}>
+        <NavLink to="/admin/task-automation" className={getLinkClass}>
           <BarChart2 size={20} />
-          <span>Summary</span>
+          <span>Automation</span>
+        </NavLink>
+        <NavLink to="/admin/ai-assistant" className={getLinkClass}>
+          <MessageSquare size={20} />
+          <span>AI Assistant</span>
         </NavLink>
          <NavLink to="/admin/notifications" className={getLinkClass}>
           <Bell size={20} />

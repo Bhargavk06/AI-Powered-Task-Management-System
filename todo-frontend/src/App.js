@@ -28,6 +28,8 @@ import EmployeeSectionPage from './admin/EmployeeSectionPage';
 import ManagerSection from './admin/ManagerSection'; 
 import ProjectSection from './projects/ProjectSection';
 import TaskRecommender from './admin/TaskRecommender'; 
+import TaskAutomation from './admin/TaskAutomation';
+import AdminAIAssistant from './admin/AdminAIAssistant';
 import AdminHome from './admin/HomeSection'; 
 import ManagerHome from './manager/HomeSection'; 
 import TaskSummarySection from './admin/TaskSummarySection'; 
@@ -84,9 +86,11 @@ function App() {
                   <Route path="projects/:projectId" element={<ProjectDetailsPage />} />
                   <Route path="projects/:projectId/assign/:userId" element={<ProjectTaskAssignment />} />
                   <Route path="task-recommender" element={<TaskRecommender />} />
+                  <Route path="task-automation" element={<TaskAutomation />} />
                   <Route path="task-summary" element={<TaskSummarySection />} />
                   <Route path="notifications" element={<NotificationPage />} />
                   <Route path="assignTask/:id" element={<AssignTaskPage />} />
+                  <Route path="ai-assistant" element={<AdminAIAssistant />} />
               </Route>
 
             </Routes>
