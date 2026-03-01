@@ -14,7 +14,7 @@ public class AutomationDto {
         String taskName,
         String description,
         String priority,
-        String deadline,
+        java.time.LocalDate deadline,
         String assignedToId,
         String assignedById
     ) {}

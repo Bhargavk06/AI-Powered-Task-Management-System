@@ -1,5 +1,6 @@
 package com.example.todo.Service;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -57,6 +58,10 @@ public class AssignedTaskService {
         newTask.setAssignedBy(assignedBy);
         newTask.setAssignee(assignee);
 
+        newTask.setLastUpdatedAt(java.time.LocalDateTime.now());
+        newTask.setCreatedAt(java.time.LocalDateTime.now());
+        newTask.setCompletedAt(null);
+
         AssignedTask savedTask = assignedtaskrepo.save(newTask);
 
         // Notifications & Emails
@@ -72,14 +77,39 @@ public class AssignedTaskService {
 
     // ... (Add these methods to your existing AssignedTaskService)
 
+    //Admin AI Assistant related methods
+    public List<AssignedTask> getActiveTasksForEmployee(String employeeId) {
+    return assignedtaskrepo.findByAssigneeIdAndStatusNotIgnoreCase(employeeId, "done");
+}
+
+public List<AssignedTask> getAllActiveTasks() {
+    return assignedtaskrepo.findByStatusNotIgnoreCase("done");
+}
+
+
+
+/////////////////////////////////////////////////////////////////
+
     public List<AssignedTask> searchTasks(String userId, String managerName, String priority, String dueDate) {
+
+         LocalDate parsedDueDate = null;
+
+    if (dueDate != null && !dueDate.isBlank()) {
+        try {
+            parsedDueDate = LocalDate.parse(dueDate);
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid date format. Expected YYYY-MM-DD");
+        }
+    }
+
+    LocalDate finalParsedDueDate = parsedDueDate;
         return assignedtaskrepo.findByAssigneeId(userId).stream()
                 .filter(t -> managerName == null ||
                         (t.getAssignedBy() != null && t.getAssignedBy().getUsername().equalsIgnoreCase(managerName)))
                 .filter(t -> priority == null ||
                         (t.getPriority() != null && t.getPriority().equalsIgnoreCase(priority)))
                 .filter(t -> dueDate == null ||
-                        (t.getDeadline() != null && t.getDeadline().contains(dueDate)))
+                        (t.getDeadline() != null && t.getDeadline().isEqual(finalParsedDueDate)))
                 .collect(Collectors.toList());
     }
 
@@ -204,6 +234,10 @@ public class AssignedTaskService {
         newTask.setAssignee(assignee);
         newTask.setProject(project);
 
+        newTask.setLastUpdatedAt(java.time.LocalDateTime.now());
+        newTask.setCreatedAt(java.time.LocalDateTime.now());
+        newTask.setCompletedAt(null);
+
         // sendNewTaskEmail(newTask);
 
         AssignedTask savedTask = assignedtaskrepo.save(newTask);
@@ -278,6 +312,12 @@ public class AssignedTaskService {
 
         // 2. Update the task status in the database
         task.setStatus(status);
+        task.setLastUpdatedAt(java.time.LocalDateTime.now());
+        if(status.equalsIgnoreCase("done")) {
+    task.setCompletedAt(java.time.LocalDateTime.now());
+} else {
+    task.setCompletedAt(null);
+}
         assignedtaskrepo.save(task);
 
         // 3. --- EMAIL NOTIFICATION LOGIC ---

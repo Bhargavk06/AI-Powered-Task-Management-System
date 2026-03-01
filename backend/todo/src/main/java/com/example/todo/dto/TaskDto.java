@@ -1,5 +1,7 @@
 package com.example.todo.dto;
 
+import java.time.LocalDate;
+
 import com.example.todo.AssignedTask;
 
 public class TaskDto {
@@ -7,7 +9,7 @@ public class TaskDto {
     private String taskname;
     private String description;
     private String status;
-    private String deadline;
+    private LocalDate deadline;
     private String priority;
     private ProjectDto project;
     private String assignedBy;
@@ -41,8 +43,8 @@ public class TaskDto {
     public void setDescription(String description) { this.description = description; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
-    public String getDeadline() { return deadline; }
-    public void setDeadline(String deadline) { this.deadline = deadline; }
+    public LocalDate getDeadline() { return deadline; }
+    public void setDeadline(LocalDate deadline) { this.deadline = deadline; }
     public String getPriority() { return priority; }
     public void setPriority(String priority) { this.priority = priority; }
     public ProjectDto getProject() { return project; }
