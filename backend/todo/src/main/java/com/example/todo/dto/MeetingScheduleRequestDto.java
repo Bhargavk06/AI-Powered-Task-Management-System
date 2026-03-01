@@ -2,11 +2,15 @@ package com.example.todo.dto;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 public class MeetingScheduleRequestDto {
     
     private String title;
     private String description;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm") 
     private LocalDateTime startTime;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm") 
     private LocalDateTime endTime;
     public String getTitle() {
         return title;
