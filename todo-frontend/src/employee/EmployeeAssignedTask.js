@@ -6,7 +6,7 @@ import TaskCard from '../TaskCard';
 import Icon from '../components/AppIcon';
 import Button from '../components/Button';
 import { useAuth } from '../context/AuthContext';
-import ChatWindow from '../ChatWindow'; 
+import AIWorkspace from './AIWorkspace'; 
 import { MessageSquare, Bell, X, Mail, CheckCircle } from 'react-feather'; 
 import { useNotifications } from '../notifications/NotificationProvider'; 
 
@@ -359,22 +359,14 @@ const statusColumns = [
       </h2>
       <p className="text-lg text-center mb-8 text-gray-600 dark:text-gray-300">Manage and track tasks across your organization with intelligent workflow orchestration</p>
 
-      <button
-        onClick={handleToggleChat}
-        className="fixed bottom-6 right-6 bg-indigo-600 text-white rounded-full w-16 h-16 flex items-center justify-center text-2xl shadow-lg hover:bg-indigo-700 transition-transform hover:scale-110 z-50"
-      >
-        <MessageSquare size={28} />
-      </button>
+     <button
+  onClick={() => setIsChatOpen(true)}
+  className="fixed bottom-6 right-6 bg-indigo-600 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-lg z-50"
+>
+  <MessageSquare size={28} />
+</button>
 
-      {/* --- THE CHAT WINDOW COMPONENT --- */}
-      {/* It's always rendered, but its visibility is controlled internally by the `isOpen` prop */}
-     <div className="fixed bottom-24 right-6 z-50">
-        <ChatWindow 
-          isOpen={isChatOpen}
-          onToggle={handleToggleChat}
-          onSendMessage={handleSendMessageToGemini}
-        />
-      </div>
+
 
       <div className="flex flex-wrap justify-between items-center mb-5 gap-4">
         {/* View Toggle Buttons */}
@@ -653,6 +645,10 @@ const statusColumns = [
           </div>
         </div>
       )}
+       <AIWorkspace 
+  isOpen={isChatOpen}
+  onClose={() => setIsChatOpen(false)}
+/>
     </div>
   );
 }
