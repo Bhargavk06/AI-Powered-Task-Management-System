@@ -40,6 +40,7 @@ import EditProjectForm from './projects/EditProjectForm';
 import ProjectDetailsPage from './projects/ProjectDetailsPage';
 import ProjectTaskAssignment from './projects/ProjectTaskAssignment';
 import ManagerProjects from './manager/ManagerProjects';
+import ExecutionHealthDashboard from './admin/ExecutionHealthDashboard';
 
 
 function App() {
@@ -88,6 +89,7 @@ function App() {
                   <Route path="task-recommender" element={<TaskRecommender />} />
                   <Route path="task-automation" element={<TaskAutomation />} />
                   <Route path="task-summary" element={<TaskSummarySection />} />
+                  <Route path="execution-health" element={<ExecutionHealthDashboard />} />
                   <Route path="notifications" element={<NotificationPage />} />
                   <Route path="assignTask/:id" element={<AssignTaskPage />} />
                   <Route path="ai-assistant" element={<AdminAIAssistant />} />

@@ -9,7 +9,8 @@ import {
   Bell, 
   MessageSquare,
   LogOut,
-  Settings 
+  Settings,
+  Activity
 } from 'react-feather';
 import { useNotifications } from '../notifications/NotificationProvider'; 
 
@@ -66,6 +67,10 @@ function AdminDashboard() {
             <span className="text-xs font-semibold text-slate-400 uppercase">Tools & Reports</span>
         </div>
 
+        <NavLink to="/admin/execution-health" className={getLinkClass}>
+          <Activity size={20} />
+          <span>Execution Health</span>
+        </NavLink>
         <NavLink to="/admin/task-recommender" className={getLinkClass}>
           <BarChart2 size={20} />
           <span>Recommender</span>

@@ -1,6 +1,9 @@
 package com.example.todo.config;
 
 import com.example.todo.filter.JWTFilter;
+
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +16,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration; 
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource; 
 import org.springframework.web.filter.CorsFilter; 
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
@@ -36,6 +40,9 @@ public class SecurityConfig {
                 // Keep your existing public endpoints
                 .requestMatchers("/user/login", "/user/register").permitAll()
                 
+                // Task Execution Health endpoints - organizational metrics (no individual performance data)
+                .requestMatchers("/api/health/**").permitAll()
+                
                 .requestMatchers("/api/assistant/**").permitAll()
 
                 .requestMatchers("/api/gemini/**").permitAll()
@@ -56,26 +63,20 @@ public class SecurityConfig {
     }
 
     // Add this Bean to configure CORS globally.
-    @Bean
-    public UrlBasedCorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        
-        // Allow requests from your React frontend
-        configuration.addAllowedOrigin("http://localhost:3000"); 
-        
-        // Allow all standard methods (GET, POST, PUT, DELETE, OPTIONS)
-        configuration.addAllowedMethod("*"); 
-        
-        // Allow all headers, including Authorization
-        configuration.addAllowedHeader("*"); 
-        
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        
-        // Apply this configuration to all paths in your application
-        source.registerCorsConfiguration("/**", configuration); 
-        
-        return source;
-    }
+   @Bean
+public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration configuration = new CorsConfiguration();
+
+    configuration.setAllowCredentials(true);
+    configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+    configuration.setAllowedMethods(List.of("*"));
+    configuration.setAllowedHeaders(List.of("*"));
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", configuration);
+
+    return source;
+}
 }
 
 

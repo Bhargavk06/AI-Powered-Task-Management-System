@@ -32,7 +32,9 @@
 package com.example.todo.Controller;
 
 import com.example.todo.Service.AIAssistantService;
-import com.example.todo.dto.AIAssistantDto;
+import com.example.todo.dto.AIAssistantRequestDto;
+import com.example.todo.dto.AIAssistantResponseDto;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -44,7 +46,7 @@ public class AIAssistantController {
     private AIAssistantService aiAssistantService;
 
     @PostMapping("/chat")
-    public String chat(@RequestBody AIAssistantDto dto) {
+    public AIAssistantResponseDto chat(@RequestBody AIAssistantRequestDto dto) {
         return aiAssistantService.handleUserMessage(dto.getUserId(), dto.getUserMessage());
     }
 

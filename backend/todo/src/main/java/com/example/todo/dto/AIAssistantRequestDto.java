@@ -1,6 +1,6 @@
 package com.example.todo.dto;
 
-public class AIAssistantDto {
+public class AIAssistantRequestDto {
 	String userMessage;
 	String userId;
 	public String getUserMessage() {

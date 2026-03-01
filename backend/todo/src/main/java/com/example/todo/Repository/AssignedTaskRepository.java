@@ -1,5 +1,6 @@
 package com.example.todo.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -27,6 +28,44 @@ public interface AssignedTaskRepository extends JpaRepository<AssignedTask,Long>
 	List<AssignedTask> findByAssignedByUsername(String assignedByUsername);
 	
 	int countByStatus(String status);
+	
+	// Completion queries - for health analysis
+	@Query("SELECT COUNT(a) FROM AssignedTask a WHERE a.completedAt IS NOT NULL")
+	int countCompletedTasks();
+	
+	@Query("SELECT COUNT(a) FROM AssignedTask a WHERE a.completedAt IS NULL AND LOWER(a.status) != 'completed' AND LOWER(a.status) != 'done'")
+	int countActiveTasks();
+	
+	@Query("SELECT COUNT(a) FROM AssignedTask a WHERE a.completedAt IS NOT NULL AND a.completedAt < a.deadline")
+	int countTasksCompletedOnTime();
+	
+	@Query("SELECT COUNT(a) FROM AssignedTask a WHERE a.completedAt IS NOT NULL AND a.completedAt > a.deadline")
+	int countTasksCompletedLate();
+	
+	// Status breakdown queries
+	@Query("SELECT COUNT(a) FROM AssignedTask a WHERE LOWER(a.status) = 'pending' OR LOWER(a.status) = 'not started'")
+	int countPendingTasks();
+	
+	@Query("SELECT COUNT(a) FROM AssignedTask a WHERE LOWER(a.status) = 'in progress'")
+	int countInProgressTasks();
+	
+	// Priority distribution queries for active tasks
+	@Query("SELECT COUNT(a) FROM AssignedTask a WHERE LOWER(a.priority) = 'high' AND a.completedAt IS NULL")
+	int countHighPriorityActiveTasks();
+	
+	@Query("SELECT COUNT(a) FROM AssignedTask a WHERE LOWER(a.priority) = 'medium' AND a.completedAt IS NULL")
+	int countMediumPriorityActiveTasks();
+	
+	@Query("SELECT COUNT(a) FROM AssignedTask a WHERE LOWER(a.priority) = 'low' AND a.completedAt IS NULL")
+	int countLowPriorityActiveTasks();
+	
+	// Overdue tasks query
+	@Query("SELECT a FROM AssignedTask a WHERE a.completedAt IS NULL AND a.deadline < :today AND a.deadline IS NOT NULL")
+	List<AssignedTask> findOverdueTasks(@Param("today") LocalDate today);
+	
+	// Completed tasks for trend analysis
+	@Query("SELECT a FROM AssignedTask a WHERE a.completedAt IS NOT NULL AND CAST(a.completedAt AS date) = :date")
+	List<AssignedTask> findTasksCompletedOn(@Param("date") LocalDate date);
 	
 	@Query("SELECT COUNT(a) FROM AssignedTask a WHERE a.assignee.role = 'employee'")
 	int countTasksAssignedToEmployees();

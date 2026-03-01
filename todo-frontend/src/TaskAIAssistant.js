@@ -15,6 +15,13 @@ function TaskAIAssistant({ messages, setMessages, loading, setLoading }) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const getPriorityColor = (priority) => {
+    if (!priority) return "bg-gray-100 text-gray-600";
+    if (priority.toLowerCase() === "high") return "bg-red-100 text-red-600";
+    if (priority.toLowerCase() === "medium") return "bg-yellow-100 text-yellow-700";
+    return "bg-green-100 text-green-600";
+  };
+
   const sendMessage = async () => {
     if (!input.trim()) return;
 
@@ -30,7 +37,15 @@ function TaskAIAssistant({ messages, setMessages, loading, setLoading }) {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setMessages(prev => [...prev, { role: "assistant", text: res.data }]);
+      // Store structured AI response
+      setMessages(prev => [
+        ...prev,
+        {
+          role: "assistant",
+          data: res.data
+        }
+      ]);
+
     } catch {
       setMessages(prev => [...prev, { role: "assistant", text: "Error fetching AI response" }]);
     }
@@ -51,16 +66,72 @@ function TaskAIAssistant({ messages, setMessages, loading, setLoading }) {
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+
             <div className={`p-3 rounded-lg max-w-[70%] text-sm shadow ${
               msg.role === "user"
                 ? "bg-indigo-600 text-white"
                 : "bg-white text-gray-800"
             }`}>
+
               <div className="flex items-center gap-2 text-xs mb-1">
                 {msg.role === "user" ? <User size={12}/> : <Cpu size={12}/>}
                 {msg.role}
               </div>
-              {msg.text}
+
+              {/* USER MESSAGE */}
+              {msg.role === "user" && msg.text}
+
+              {/* AI RESPONSE */}
+              {msg.role === "assistant" && msg.data?.tasks && (
+                <div className="space-y-3 mt-2">
+
+                  {msg.data.tasks.length === 0 && (
+                    <div className="text-gray-500 text-xs">No tasks found</div>
+                  )}
+
+                  {msg.data.tasks.map((task, index) => (
+                    <div key={index} className="border rounded-lg p-3 bg-indigo-50">
+
+                      <div className="font-semibold text-indigo-700">
+                        {task.taskName}
+                      </div>
+
+                      <div className="text-xs text-gray-600 mt-1">
+                        {task.description}
+                      </div>
+
+                      <div className="flex gap-2 mt-2 text-xs flex-wrap">
+
+                        <span className={`px-2 py-1 rounded ${getPriorityColor(task.priority)}`}>
+                          {task.priority}
+                        </span>
+
+                        <span className="px-2 py-1 bg-blue-100 text-blue-600 rounded">
+                          {task.status}
+                        </span>
+
+                        <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded">
+                          {task.deadline}
+                        </span>
+
+                      </div>
+
+                      {task.reasoning && (
+                        <div className="text-xs mt-2 text-gray-500 italic">
+                          {task.reasoning}
+                        </div>
+                      )}
+
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* FALLBACK IF ERROR */}
+              {msg.role === "assistant" && msg.text && (
+                <div>{msg.text}</div>
+              )}
+
             </div>
           </div>
         ))}

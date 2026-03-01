@@ -9,6 +9,7 @@ import { useAuth } from './context/AuthContext';
 import AIWorkspace from './AIWorkspace';  
 import { MessageSquare, Bell, X, Mail, CheckCircle } from 'react-feather'; 
 import { useNotifications } from './notifications/NotificationProvider'; 
+import KanbanMiniCard from './KanbanMiniCard';
 
 // Helper functions (keep these)
 const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
@@ -91,6 +92,9 @@ function EmployeeTodo() {
   // State for Calendar 
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+
+  const [selectedKanbanTask, setSelectedKanbanTask] = useState(null);
+  const [viewingTaskDetails, setViewingTaskDetails] = useState(null);
 
 console.log('--- EmployeeTodo is rendering. User from context is:', user);
 
@@ -251,11 +255,11 @@ useEffect(() => {
   }, {});
 
 const statusColumns = [
-    { title: 'To Do', color: 'bg-gray-100 dark:bg-gray-800' },
-    { title: 'In Progress', color: 'bg-blue-100 dark:bg-blue-900' },
-    { title: 'In Review', color: 'bg-yellow-100 dark:bg-yellow-900' },
-    { title: 'Done', color: 'bg-green-100 dark:bg-green-900' }
-  ];
+    { title: 'To Do', color: 'bg-slate-100 dark:bg-slate-900/40' },
+    { title: 'In Progress', color: 'bg-amber-100 dark:bg-amber-900/40' }, // Yellow
+    { title: 'In Review', color: 'bg-purple-100 dark:bg-purple-900/40' }, // Violet
+    { title: 'Done', color: 'bg-emerald-100 dark:bg-emerald-900/40' }    // Green
+];
 
   const getPriorityColorKanban = (priority) => {
     switch (priority?.toLowerCase()) {
@@ -520,38 +524,44 @@ const statusColumns = [
       )}
     </div>
   )}
-
-      {viewMode === 'kanban' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* We now map over the array of objects */}
-          {statusColumns.map((column) => (
-            // Only render columns that have tasks or are part of the main workflow
-            (tasksByStatus[column.title] || ['To Do', 'In Progress', 'In Review'].includes(column.title)) && (
-              // Use the dynamic color class from our object
-              <div key={column.title} className={`${column.color} rounded-lg p-4 flex flex-col shadow-sm`}>
-                <h4 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-50 text-center">
-                  {/* Use the title and calculate the count */}
-                  {column.title} ({tasksByStatus[column.title]?.length || 0})
-                </h4>
-                <div className="flex-grow flex flex-col gap-4 min-h-[200px]">
-                  {/* Get the tasks for this specific column */}
-                  {tasksByStatus[column.title]?.map(t => (
-                    <TaskCard
-                      key={t.taskId}
-                      task={t}
-                      onStatusChange={handleStatusChange}
-                      showStatusChanger={true}
-                      openCommentsModal={openCommentsModal}
-                      unreadComments={unreadMap[t.taskId]}
-                    />
-                  ))}
-                </div>
-              </div>
-            )
-          ))}
+{viewMode === 'kanban' && (
+  <div className="flex overflow-x-auto pb-6 gap-6 scrollbar-hide">
+    {statusColumns.map((column) => (
+      /* --- THIS IS THE DIV YOU ARE UPDATING --- */
+      <div 
+        key={column.title} 
+        className={`flex-shrink-0 w-80 ${column.color} rounded-xl flex flex-col max-h-[75vh] snap-center border border-gray-200/50 dark:border-gray-700/50 shadow-sm`}
+      >
+        {/* Column Header */}
+        <div className="p-4 flex justify-between items-center sticky top-0 bg-inherit rounded-t-xl z-10">
+          <h4 className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+            {column.title}
+          </h4>
+          <span className="bg-white/50 dark:bg-black/20 text-gray-600 dark:text-gray-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
+            {tasksByStatus[column.title]?.length || 0}
+          </span>
         </div>
-      )}
 
+        {/* Task List in Column */}
+        <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-3">
+          {tasksByStatus[column.title]?.map(t => (
+            <KanbanMiniCard
+              key={t.taskId}
+              task={t}
+              onClick={() => setViewingTaskDetails(t)} 
+            />
+          ))}
+          
+          {(!tasksByStatus[column.title] || tasksByStatus[column.title].length === 0) && (
+            <div className="border-2 border-dashed border-gray-300/50 dark:border-gray-600/30 rounded-lg h-24 flex items-center justify-center text-gray-400 text-[10px] uppercase font-bold">
+              Empty
+            </div>
+          )}
+        </div>
+      </div>
+    ))}
+  </div>
+)}
       {viewMode === 'calendar' && (
         <div className="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-md p-5">
           <div className="flex justify-between items-center mb-5">
@@ -592,6 +602,18 @@ const statusColumns = [
           }}
         />
       )}
+
+      {selectedKanbanTask && (
+  <TaskCard
+    task={selectedKanbanTask}
+    onStatusChange={handleStatusChange}
+    showStatusChanger={true}
+    openCommentsModal={openCommentsModal}
+    unreadComments={unreadMap[selectedKanbanTask.taskId]}
+    isModal={true}
+    onClose={() => setSelectedKanbanTask(null)}
+  />
+)}
 
        {isNotificationsOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[100]">
@@ -649,6 +671,46 @@ const statusColumns = [
   isOpen={isChatOpen}
   onClose={() => setIsChatOpen(false)}
 />
+
+{/* MASTER TASK DETAIL MODAL */}
+{viewingTaskDetails && (
+  <div 
+    className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[110] p-4"
+    onClick={() => setViewingTaskDetails(null)}
+  >
+    <div 
+      className="w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden rounded-xl shadow-2xl"
+      onClick={(e) => e.stopPropagation()} 
+    >
+      {/* 1. Dedicated Header Bar (Fixed the overlap) */}
+      <div className="bg-white dark:bg-gray-800 px-4 py-2 flex justify-between items-center border-b dark:border-gray-700">
+        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+          Task Details
+        </span>
+        <button 
+          onClick={() => setViewingTaskDetails(null)}
+          className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+        >
+          <X size={20} className="text-gray-500" />
+        </button>
+      </div>
+
+      {/* 2. Scrollable Body containing the TaskCard */}
+      <div className="overflow-y-auto bg-white dark:bg-gray-900">
+        <TaskCard
+          task={viewingTaskDetails}
+          onStatusChange={handleStatusChange}
+          showStatusChanger={true}
+          openCommentsModal={(t) => {
+             setViewingTaskDetails(null);
+             openCommentsModal(t);
+          }}
+          unreadComments={unreadMap[viewingTaskDetails.taskId]}
+        />
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }
