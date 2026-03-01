@@ -81,7 +81,6 @@ function ProjectSection() {
     <div className="w-full p-6 md:p-8">
       {/* Main container for consistent spacing */}
       <div className="flex flex-col space-y-6">
-
         {/* --- CORRECTED HEADER (Your version was already good) --- */}
         <div className="flex justify-between items-center">
           <div>
