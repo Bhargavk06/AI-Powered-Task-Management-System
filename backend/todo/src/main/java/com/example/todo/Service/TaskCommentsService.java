@@ -79,7 +79,7 @@ public class TaskCommentsService {
 
     public Map<Long, Boolean> getUnreadCommentMap(String userId) {
         System.out.println("Fetching unread comment map for userId: " + userId);
-        List<CommentReadStatus> unreadStatuses = commentReadStatusRepo.findByUserIdAndReadFalse(userId);
+        List<CommentReadStatus> unreadStatuses = commentReadStatusRepo.findByUserIdAndIsReadFalse(userId);
         Map<Long, Boolean> unreadMap = new HashMap<>();
 
         for (CommentReadStatus status : unreadStatuses) {

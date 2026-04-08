@@ -18,7 +18,7 @@ public class NotificationController {
     @Autowired
     private NotificationService notificationService;
 
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('manager') or hasRole('admin')")
     @GetMapping("/user/{userId}")
     public List<Notifications> getNotificationsByUserId(@PathVariable String userId) {
         return notificationService.getUserNotifications(userId);

@@ -1,6 +1,7 @@
 import React, {useState, useEffect } from 'react';
 import axios from 'axios';
 import Icon from '../components/AppIcon';
+import { API_ROUTES } from '../api/apiRoutes';
 
 const FileList = ({ taskId, triggerRefresh }) => {
   const [files, setFiles] = useState([]);
@@ -8,7 +9,6 @@ const FileList = ({ taskId, triggerRefresh }) => {
   const [downloadingFileId, setDownloadingFileId] = useState(null); // To show a loading state per file
 
   useEffect(() => {
-    // This part is already correct.
     const token = localStorage.getItem('token');
     if (!token) {
         console.error("Authentication Error: Cannot fetch files without a token.");
@@ -17,13 +17,13 @@ const FileList = ({ taskId, triggerRefresh }) => {
     const headers = { 'Authorization': `Bearer ${token}` };
 
     setIsLoading(true);
-    axios.get(`http://localhost:8080/api/tasks/${taskId}/files`, { headers })
+    axios.get(API_ROUTES.FILE_HANDLING.GET_TASK_FILES(taskId), { headers })
       .then(response => setFiles(response.data))
       .catch(error => console.error("Error fetching files:", error))
       .finally(() => setIsLoading(false));
   }, [taskId, triggerRefresh]);
 
-  // ✅ --- THIS IS THE NEW, SECURE DOWNLOAD HANDLER ---
+
   const handleFileDownload = async (fileId, filename) => {
     // Prevent multiple clicks while a download is in progress
     if (downloadingFileId === fileId) return;
@@ -38,7 +38,7 @@ const FileList = ({ taskId, triggerRefresh }) => {
       }
       
       // 1. Make an authenticated request to get the file as a 'blob'
-      const response = await axios.get(`http://localhost:8080/api/files/${fileId}`, {
+      const response = await axios.get(API_ROUTES.FILE_HANDLING.DOWNLOAD(fileId), {
         headers: { 'Authorization': `Bearer ${token}` },
         responseType: 'blob', // This is the crucial part!
       });
@@ -76,7 +76,7 @@ const FileList = ({ taskId, triggerRefresh }) => {
   return (
     <div className="space-y-2">
       {files.map(file => (
-        // ✅ The <a> tag is now a <button> to better handle the onClick event.
+        // The <a> tag is now a <button> to better handle the onClick event.
         // We prevent the default link behavior and call our secure handler instead.
         <button 
           key={file.id}

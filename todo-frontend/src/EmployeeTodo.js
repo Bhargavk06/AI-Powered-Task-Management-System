@@ -11,6 +11,8 @@ import { MessageSquare, Bell, X, Mail, CheckCircle } from 'react-feather';
 import { useNotifications } from './notifications/NotificationProvider'; 
 import KanbanMiniCard from './KanbanMiniCard';
 
+import { API_ROUTES } from './api/apiRoutes';
+
 // Helper functions (keep these)
 const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
 const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
@@ -117,11 +119,11 @@ useEffect(() => {
         'Authorization': `Bearer ${token}`
       };
 
-      axios.get(`http://localhost:8080/assigntask/gettask/${userId}`, { headers })
+      axios.get(API_ROUTES.EMPLOYEE.GET_TASKS(userId), { headers })
         .then((response) => setTask(response.data))
         .catch((error) => console.log(error));
 
-      axios.get(`http://localhost:8080/comments/unread-map`, { headers })
+      axios.get(API_ROUTES.UNREAD_COMMENTS, { headers })
         .then((res) => setUnreadMap(res.data))
         .catch((err) => console.log("Error loading unread map", err));
     }
@@ -135,7 +137,7 @@ useEffect(() => {
     }
     const headers = { 'Authorization': `Bearer ${token}` };
     try {
-      await axios.put('http://localhost:8080/assigntask/updateStatus', {
+      await axios.put(API_ROUTES.EMPLOYEE.UPDATE_STATUS, {
         taskId: taskId,
         status: newStatus
       }, {headers});
@@ -157,7 +159,7 @@ useEffect(() => {
     const headers = { 'Authorization': `Bearer ${token}` };
     try {
       const userId = user.userId;
-      await axios.get(`http://localhost:8080/comments/view/${t.taskId}/${userId}`,{headers});
+      await axios.get(API_ROUTES.EMPLOYEE.VIEW_COMMENTS(t.taskId,userId),{headers});
       setUnreadMap((prev) => ({ ...prev, [t.taskId]: false }));
       setSelectedTask(t);
     } catch (err) {
@@ -180,7 +182,7 @@ useEffect(() => {
         return Promise.reject("No token found");
     }
     const headers = { 'Authorization': `Bearer ${token}` };
-    const res = await axios.post('http://localhost:8080/api/gemini/ask', payload,{headers});
+    const res = await axios.post(API_ROUTES.EMPLOYEE.GEMINI_QUERY, payload,{headers});
     return res.data;
   };
 

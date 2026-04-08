@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import useConfirmationModal from '../components/useConfirmationModal';
 import { Search, Trash2, FileText, Download } from 'react-feather';
+import { API_ROUTES } from '../api/apiRoutes';
 
 function ManagerSection() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -19,7 +20,7 @@ function ManagerSection() {
     }
     const headers = { 'Authorization': `Bearer ${token}` };
 
-    axios.get('http://localhost:8080/profile/managers', { headers })
+    axios.get(API_ROUTES.ADMIN.GET_MANAGER_PROFILES, { headers })
       .then(response => {
         if (Array.isArray(response.data)) {
           setAllManagers(response.data);
@@ -49,7 +50,7 @@ function ManagerSection() {
     }
     const headers = { 'Authorization': `Bearer ${token}` };
 
-    return axios.delete(`http://localhost:8080/profile/user/${managerId}`, { headers })
+    return axios.delete(API_ROUTES.ADMIN.DELETE_AN_USER(managerId), { headers })
       .then(() => {
         setAllManagers(prev => prev.filter(mng => mng.id !== managerId));
       })
@@ -83,7 +84,7 @@ function ManagerSection() {
 
     try {
       const response = await axios.get(
-        `http://localhost:8080/api/admin/reports/employee/${employeeId}`,
+        API_ROUTES.ADMIN.GENERATE_EMPLOYEE_REPORT(employeeId),
         {
           headers,
           responseType: "blob"

@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select';
+import { API_ROUTES } from '../api/apiRoutes';
+import { Aperture } from 'react-feather';
 
 function EditProjectForm() {
   const { projectId } = useParams();
@@ -27,14 +29,14 @@ function EditProjectForm() {
     // Fetch all users for the dropdown AND the project data to pre-fill the form
     const fetchAllData = async () => {
         try {
-            const usersResponse = await axios.get('http://localhost:8080/user/all', {headers});
+            const usersResponse = await axios.get(API_ROUTES.PROJECTS.GET_ALL_USERS, {headers});
             const formattedUsers = usersResponse.data.map(user => ({ 
                 value: user.id, 
                 label: `${user.username} (${user.role})` 
             }));
             setUserOptions(formattedUsers);
 
-            const projectResponse = await axios.get(`http://localhost:8080/projects/${projectId}`, {headers});
+            const projectResponse = await axios.get(API_ROUTES.PROJECTS.GET_ONE(projectId), {headers});
             const project = projectResponse.data;
 
             setProjectName(project.name);
@@ -72,7 +74,7 @@ function EditProjectForm() {
       userIds: selectedUsers.map(u => u.value),
     };
 
-    axios.put(`http://localhost:8080/projects/${projectId}`, updatedData, {headers})
+    axios.put(API_ROUTES.PROJECTS.GET_ONE(projectId), updatedData, {headers})
       .then(() => navigate('/admin/projects'))
       .catch(error => {
         console.error("Error updating project:", error);

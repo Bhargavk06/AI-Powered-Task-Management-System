@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Select from 'react-select';
+import { API_ROUTES } from '../api/apiRoutes';
 
 function ProjectForm() {
   const [projectName, setProjectName] = useState('');
@@ -19,7 +20,7 @@ function ProjectForm() {
         return;
     }
     const headers = {'Authorization': `Bearer ${token}`};
-    axios.get('http://localhost:8080/user/all', {headers})
+    axios.get(API_ROUTES.PROJECTS.GET_ALL_USERS, {headers})
       .then(response => {
         const formattedUsers = response.data.map(user => ({
           value: user.id,
@@ -54,7 +55,7 @@ function ProjectForm() {
       userIds: selectedUserIds,
     };
 
-    axios.post('http://localhost:8080/projects', newProjectData, {headers})
+    axios.post(API_ROUTES.PROJECTS.GET_ALL, newProjectData, {headers})
       .then(() => navigate('/admin/projects'))
       .catch(error => {
         console.error("Error creating project:", error);

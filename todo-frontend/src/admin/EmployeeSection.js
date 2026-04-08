@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import useConfirmationModal from '../components/useConfirmationModal';
 import { Search, Trash2, FileText, Download } from 'react-feather';
+import { API_ROUTES } from '../api/apiRoutes';
 
 function EmployeeSection() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,7 +23,7 @@ function EmployeeSection() {
       'Authorization': `Bearer ${token}`
     };
 
-    axios.get('http://localhost:8080/profile/employees', { headers })
+    axios.get(API_ROUTES.ADMIN.GET_EMPLOYEE_PROFILES, { headers })
       .then(response => {
         if (Array.isArray(response.data)) {
           setAllEmployees(response.data);
@@ -56,7 +57,7 @@ function EmployeeSection() {
       'Authorization': `Bearer ${token}`
     };
 
-    return axios.delete(`http://localhost:8080/profile/user/${employeeId}`, { headers })
+    return axios.delete(API_ROUTES.ADMIN.DELETE_AN_USER(employeeId), { headers })
       .then(() => {
         setAllEmployees(prev => prev.filter(emp => emp.id !== employeeId));
       })
@@ -89,7 +90,7 @@ function EmployeeSection() {
 
     try {
       const response = await axios.get(
-        `http://localhost:8080/api/admin/reports/employee/${employeeId}`,
+        API_ROUTES.ADMIN.GENERATE_EMPLOYEE_REPORT(employeeId),
         {
           headers,
           responseType: "blob"

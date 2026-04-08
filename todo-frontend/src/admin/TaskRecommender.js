@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Cpu } from 'react-feather'; // Using an icon for the button
+import { API_ROUTES } from '../api/apiRoutes';
 
 function TaskRecommender() {
   const [description, setDescription] = useState("");
@@ -21,8 +22,8 @@ function TaskRecommender() {
     const fetchUsers = async () => {
       try {
         const [employeesRes, managersRes] = await Promise.all([
-          axios.get('http://localhost:8080/profile/employees', {headers}),
-          axios.get('http://localhost:8080/profile/managers', {headers})
+          axios.get(API_ROUTES.ADMIN.GET_EMPLOYEE_PROFILES, {headers}),
+          axios.get(API_ROUTES.ADMIN.GET_MANAGER_PROFILES, {headers})
         ]);
 
         const allUsers = [...employeesRes.data, ...managersRes.data];
@@ -64,7 +65,7 @@ function TaskRecommender() {
     };
 
     axios
-      .post(`http://localhost:8080/api/recommend`, description, {headers})
+      .post(API_ROUTES.ADMIN.TASK_RECOMMENDER, description, {headers})
       .then(response => {
         if (Array.isArray(response.data)) {
           setRecommendations(response.data);

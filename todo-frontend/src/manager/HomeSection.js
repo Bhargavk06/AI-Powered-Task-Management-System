@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Users, Briefcase, Folder, CheckSquare } from 'react-feather'; // Import icons
 import { useAuth } from '../context/AuthContext';
+import { API_ROUTES } from '../api/apiRoutes';
 // A reusable StatCard component for a clean and scalable dashboard
 const StatCard = ({ icon, title, value, isLoading, color = 'emerald' }) => {
   const Icon = icon;
@@ -70,10 +71,9 @@ function HomeSection() {
         'Authorization': `Bearer ${token}`
       };
      try {
-        // ✅ FIX: Add the { headers } object to every single API call.
         const [employeesRes, managersRes, projectsRes, tasksRes] = await Promise.all([
-          axios.get(`http://localhost:8080/profile/employees`, { headers }),
-          axios.get(`http://localhost:8080/profile/managers`, { headers }),
+          axios.get(API_ROUTES.MANAGER.GET_EMPLOYEE_PROFILES, { headers }),
+          axios.get(API_ROUTES.MANAGER.GET_MANAGER_PROFILES, { headers }),
           axios.get(`http://localhost:8080/projects/user/${userId}`, { headers }),
           axios.get(`http://localhost:8080/assigntask/getincompletetask/${userId}`, { headers })
         ]);

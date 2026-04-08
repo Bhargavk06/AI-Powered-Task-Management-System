@@ -9,6 +9,6 @@ import com.example.todo.CommentReadStatus;
 
 @Repository
 public interface CommentReadStatusRepository extends JpaRepository<CommentReadStatus, Long> {
-    List<CommentReadStatus> findByUserIdAndReadFalse(String userId);
+    List<CommentReadStatus> findByUserIdAndIsReadFalse(String userId);
     List<CommentReadStatus> findByCommentIdAndUserId(Long commentId, String userId);
 }
