@@ -255,7 +255,7 @@ useEffect(() => {
   }, {});
 
 const statusColumns = [
-    { title: 'To Do', color: 'bg-slate-100 dark:bg-slate-900/40' },
+    { title: 'To Do', color: 'bg-blue-100 dark:bg-blue-900/40' },
     { title: 'In Progress', color: 'bg-amber-100 dark:bg-amber-900/40' }, // Yellow
     { title: 'In Review', color: 'bg-purple-100 dark:bg-purple-900/40' }, // Violet
     { title: 'Done', color: 'bg-emerald-100 dark:bg-emerald-900/40' }    // Green

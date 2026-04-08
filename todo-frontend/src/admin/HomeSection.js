@@ -223,7 +223,7 @@ function HomeSection() {
         </div>
 
         {/* Analytics Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white p-6 rounded-2xl shadow-md">
             <h3 className="text-lg font-semibold text-slate-800 mb-4">
               Task Completion Overview
@@ -241,7 +241,7 @@ function HomeSection() {
               Add Performance Chart Here
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Task Summary Section */}
         <div className="space-y-6">

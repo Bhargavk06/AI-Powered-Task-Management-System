@@ -49,14 +49,12 @@ function App() {
       <AuthProvider>
         <ThemeProvider>
            <NotificationProvider>
-          {/* NotificationProvider might be better placed inside layouts if it depends on user roles */}
             <Routes>
-              {/* Public Routes */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<UserLogin />} />
               <Route path="/UserLogin" element={<UserLogin />} />
               
-              {/* Standalone Employee Route */}
+              {/*Employee Route */}
               <Route path="/emptodo" element={<EmployeeTodo />} />
 
               {/* --- MANAGER NESTED ROUTES --- */}
@@ -73,12 +71,9 @@ function App() {
                 <Route path="notifications" element={<NotificationPage />} />
               </Route>
               
-              {/* --- ADMIN NESTED ROUTES (EXPANDED) --- */}
+              {/* --- ADMIN NESTED ROUTES --- */}
               <Route path="/admin" element={<AdminTodo />}>
-                  {/* Default page for /admin */}
                   <Route index element={<AdminHome />} /> 
-                  
-                  {/* Child routes for the Admin dashboard */}
                   <Route path="managers" element={<ManagerSection />} />
                   <Route path="employees" element={<EmployeeSectionPage />} />
                   <Route path="projects" element={<ProjectSection />} />

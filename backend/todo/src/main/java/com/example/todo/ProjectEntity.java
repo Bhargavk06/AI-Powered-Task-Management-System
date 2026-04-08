@@ -20,7 +20,7 @@ public class ProjectEntity {
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-        name = "project_users", // Name of the intermediate "join" table
+        name = "project_users",
         joinColumns = @JoinColumn(name = "project_id"),
         inverseJoinColumns = @JoinColumn(name = "user_id")
     )
