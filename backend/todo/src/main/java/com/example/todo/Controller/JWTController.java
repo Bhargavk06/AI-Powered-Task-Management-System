@@ -21,7 +21,7 @@ import com.example.todo.Service.UserService;
 import com.example.todo.dto.LoginRequestDto;
 import com.example.todo.dto.LoginResponseDto;
 import com.example.todo.util.JWTUtil;
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "/*")
 @RestController
 @RequestMapping("/user")
 public class JWTController {

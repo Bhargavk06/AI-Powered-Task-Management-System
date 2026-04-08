@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { User, Lock, Mail, Phone, Briefcase } from 'react-feather'; // Icons for the form
 import { jwtDecode } from 'jwt-decode'; 
+import { API_ROUTES } from './api/apiRoutes';
 
 function UserAuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -40,7 +41,7 @@ function UserAuthPage() {
     setError('');
   if (isLogin) {
       try {
-        const response = await axios.post('http://localhost:8080/user/login', {
+        const response = await axios.post('http://10.244.3.142:8080/user/login', {
           userId: userId, 
           password: password
         });
@@ -50,7 +51,7 @@ function UserAuthPage() {
         if (token) {
            const authenticatedUser = login(token);
            if (authenticatedUser && authenticatedUser.role) {
-             const userRole = authenticatedUser.role;
+             const userRole = authenticatedUser.role.toLowerCase();
              if (userRole === 'admin') navigate('/admin');
              else if (userRole === 'manager') navigate('/manager');
              else navigate('/emptodo');
@@ -68,7 +69,7 @@ function UserAuthPage() {
       }
     } else { // Register logic
       try {
-        const response = await axios.post('http://localhost:8080/user/register', {
+        const response = await axios.post(API_ROUTES.REGISTER, {
           id: userId,
           username,
           password,
@@ -114,28 +115,31 @@ function UserAuthPage() {
               className="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
           </div>
 
-          {!isLogin && (
-            <>
-              {/* Username Input (for registration) */}
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input type="text" placeholder="Username" required value={username} onChange={(e) => setUsername(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-              </div>
-              {/* Email Input */}
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input type="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-              </div>
-              {/* Phone Input */}
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input type="tel" placeholder="Phone Number" required value={phone} onChange={(e) => setPhone(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-              </div>
-            </>
-          )}
+
+    {/* REMOVED THE REGISTRATION LOGIC SINCE ADMIN ADDS THE USERS MANUALLY */}
+
+          {/* {!isLogin && ( */}
+             
+               {/* Username Input (for registration) */}
+            {/* //   <div className="relative">
+            //     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            //     <input type="text" placeholder="Username" required value={username} onChange={(e) => setUsername(e.target.value)} */}
+            {/* //       className="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            //   </div>
+            //   {/* Email Input */}
+            {/* //   <div className="relative">
+            //     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            //     <input type="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} */} 
+            {/* //       className="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            //   </div> */}
+               {/* Phone Input */}
+            {/* //   <div className="relative">
+            //     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            //     <input type="tel" placeholder="Phone Number" required value={phone} onChange={(e) => setPhone(e.target.value)} */}
+            {/* //       className="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            //   </div>
+            // </> */}
+          
 
           {/* Password Input */}
           <div className="relative">
@@ -165,11 +169,11 @@ function UserAuthPage() {
         </form>
 
         {/* Toggle Button */}
-        <div className="text-center mt-4">
+        {/* <div className="text-center mt-4">
           <button onClick={handleToggle} className="text-sm font-medium text-emerald-600 hover:text-emerald-800">
             {isLogin ? 'Don\'t have an account? Sign Up' : 'Already have an account? Login'}
           </button>
-        </div>
+        </div> */}
 
         {/* Message/Error Display */}
         {message && <p className="mt-4 text-center text-sm font-medium text-green-600">{message}</p>}

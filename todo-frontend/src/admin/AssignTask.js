@@ -8,6 +8,7 @@ import { X, Type, AlignLeft, Calendar, Plus, ArrowLeft } from 'react-feather';
 // At the top of AssignTask.js
 import useConfirmationModal from '../components/useConfirmationModal'; // Adjust path if needed
 import { useAuth } from '../context/AuthContext';
+import { API_ROUTES } from '../api/apiRoutes';
 
 // Helper functions (keep these)
 const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
@@ -75,11 +76,11 @@ function AssignTask() {
     }
     const headers = { 'Authorization': `Bearer ${token}` };
 
-    axios.get(`http://localhost:8080/assigntask/gettask/${id}`, { headers })
+    axios.get(API_ROUTES.ADMIN.GET_TASKS(id), { headers })
       .then((response) => setTasks(response.data))
       .catch((error) => console.error("Fetching Error: ", error));
 
-    axios.get(`http://localhost:8080/comments/unread-map`, { headers })
+    axios.get(API_ROUTES.UNREAD_COMMENTS, { headers })
       .then((res) => setUnreadMap(res.data))
       .catch((err) => console.log("Error loading unread map", err));
   };
@@ -98,14 +99,14 @@ function AssignTask() {
 
     const fetchTasks = () => {
       axios
-        .get(`http://localhost:8080/assigntask/gettask/${id}`, { headers })
+        .get(API_ROUTES.ADMIN.GET_TASKS(id), { headers })
         .then((response) => setTasks(response.data))
         .catch((error) => console.error("Fetching Error: ", error));
     };
 
     const fetchUnreadMap = () => {
       axios
-        .get(`http://localhost:8080/comments/unread-map`, { headers })
+        .get(API_ROUTES.UNREAD_COMMENTS, { headers })
         .then((res) => setUnreadMap(res.data))
         .catch((err) => console.log("Error loading unread map", err));
     };
@@ -128,7 +129,7 @@ function AssignTask() {
 
     e.preventDefault();
     const newTask = { taskname: taskName, description, deadline, priority, status: 'To Do' };
-    axios.post(`http://localhost:8080/assigntask/assign/${id}`, newTask, { headers })
+    axios.post(API_ROUTES.ADMIN.ASSIGN_TASK(id), newTask, { headers })
       .then(() => {
         fetchData(); // Refresh the list
         resetForm(); // This will now be called on success
@@ -150,8 +151,8 @@ function AssignTask() {
 
     e.preventDefault();
     const updatedTask = { taskId: editTaskId, taskname: taskName, description, status, deadline, priority };
-    axios.put(`http://localhost:8080/assigntask/updateTask/${editTaskId}`, updatedTask, { headers })
-      .then(() => axios.get(`http://localhost:8080/assigntask/gettask/${id}`, { headers }))
+    axios.put(API_ROUTES.ADMIN.UPDATE_TASK(editTaskId), updatedTask, { headers })
+      .then(() => axios.get(API_ROUTES.ADMIN.GET_TASKS(id), { headers }))
       .then((response) => {
         setTasks(response.data);
         resetForm();
@@ -176,7 +177,7 @@ function AssignTask() {
 
 
     try {
-      await axios.put(`http://localhost:8080/assigntask/updateStatus`, {
+      await axios.put(API_ROUTES.ADMIN.UPDATE_STATUS, {
         taskId: taskId,
         status: newStatus
       }, { headers });
@@ -200,7 +201,7 @@ function AssignTask() {
     }
     const headers = { 'Authorization': `Bearer ${token}` };
 
-    return axios.delete(`http://localhost:8080/assigntask/deleteTask/${taskId}`, { headers })
+    return axios.delete(API_ROUTES.ADMIN.DELETE_TASK(taskId), { headers })
       .then(() => {
         setTasks(currentTasks => currentTasks.filter(task => task.taskId !== taskId));
       })
@@ -255,7 +256,7 @@ function AssignTask() {
     const headers = { 'Authorization': `Bearer ${token}` };
 
     try {
-      await axios.get(`http://localhost:8080/comments/view/${t.taskId}/${user.userId}`, { headers });
+      await axios.get(API_ROUTES.ADMIN.VIEW_COMMENTS(t.taskId,user.userId), { headers });
       setUnreadMap((prev) => ({ ...prev, [t.taskId]: false }));
       setSelectedTask(t);
     } catch (err) {

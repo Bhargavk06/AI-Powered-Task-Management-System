@@ -1,7 +1,5 @@
 package com.example.todo;
 
-import org.springframework.web.bind.annotation.CrossOrigin;
-
 import jakarta.persistence.*;
 
 @Entity
@@ -13,7 +11,7 @@ public class CommentReadStatus {
 
     private Long commentId;
     private String userId;
-    private boolean read; 
+    private boolean isRead; 
 
   
     public Long getId() {
@@ -37,11 +35,11 @@ public class CommentReadStatus {
     }
 
     public boolean isRead() {
-        return read;
+        return isRead;
     }
 
-    public void setRead(boolean read) {
-        this.read = read;
+    public void setRead(boolean isRead) {
+        this.isRead = isRead;
     }
 }
 

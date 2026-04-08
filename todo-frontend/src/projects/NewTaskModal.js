@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { X, Type, AlignLeft, Calendar } from 'react-feather';
+import { API_ROUTES } from '../api/apiRoutes';
 
 // 'initialData' will be the task object if we are editing, or null if creating
 const NewTaskModal = ({ projectId, userId, initialData, onClose, onTaskSaved }) => {
@@ -46,8 +47,8 @@ const NewTaskModal = ({ projectId, userId, initialData, onClose, onTaskSaved }) 
 
     // Choose the correct API endpoint and method (POST for create, PUT for update)
     const request = isEditing
-      ? axios.put(`http://localhost:8080/assigntask/updateTask`, { ...taskData, taskId: initialData.taskId }, {headers})
-      : axios.post(`http://localhost:8080/assigntask/projects/${projectId}/tasks`, taskData, {headers});
+      ? axios.put(API_ROUTES.PROJECTS.UPDATE_TASK, { ...taskData, taskId: initialData.taskId }, {headers})
+      : axios.post(API_ROUTES.PROJECTS.ASSIGN_TASK(projectId), taskData, {headers});
     request
       .then(() => {
         onTaskSaved(); // Tell the parent page to refresh its data

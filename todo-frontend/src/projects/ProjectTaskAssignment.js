@@ -11,6 +11,7 @@ import useConfirmationModal from '../components/useConfirmationModal';
 // Import icons
 import { ArrowLeft, Plus, Search, List, Layout, Calendar as CalendarIcon, Filter } from 'react-feather';
 import Icon from '../components/AppIcon';
+import { API_ROUTES } from '../api/apiRoutes';
 
 const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
 const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
@@ -71,9 +72,9 @@ function ProjectTaskAssignment() {
     const headers = { 'Authorization': `Bearer ${token}` };
 
     setIsLoading(true);
-    const projectRequest = axios.get(`http://localhost:8080/projects/${projectId}`, { headers });
-    const tasksRequest = axios.get(`http://localhost:8080/assigntask/projects/${projectId}/users/${userId}/tasks`, { headers });
-    const unreadMapRequest = axios.get(`http://localhost:8080/comments/unread-map`, { headers });
+    const projectRequest = axios.get(API_ROUTES.PROJECTS.GET_ONE(projectId), { headers });
+    const tasksRequest = axios.get(API_ROUTES.PROJECTS.GET_ALL_TASKS_OF_A_USER_IN_A_PROJECT(projectId,userId), { headers });
+    const unreadMapRequest = axios.get(API_ROUTES.UNREAD_COMMENTS, { headers });
 
     Promise.all([projectRequest, tasksRequest, unreadMapRequest])
       .then(([projectResponse, tasksResponse, unreadResponse]) => {
@@ -95,7 +96,7 @@ function ProjectTaskAssignment() {
     const token = localStorage.getItem('token');
     if (!token) return;
     const headers = { 'Authorization': `Bearer ${token}` };
-    axios.put('http://localhost:8080/assigntask/updateStatus', { taskId, status: newStatus }, {headers})
+    axios.put(API_ROUTES.PROJECTS.UPDATE_STATUS, { taskId, status: newStatus }, {headers})
       .then(() => {
         setTasks(prev => prev.map(t => t.taskId === taskId ? { ...t, status: newStatus } : t));
       })
@@ -111,7 +112,7 @@ function ProjectTaskAssignment() {
     const token = localStorage.getItem('token');
     if (!token) return;
     const headers = { 'Authorization': `Bearer ${token}` };
-      axios.delete(`http://localhost:8080/assigntask/deleteTask/${taskId}`,{headers})
+      axios.delete(API_ROUTES.PROJECTS.DELETE_TASK(taskId),{headers})
         .then(() => {
           fetchData(); 
         })
@@ -129,7 +130,7 @@ function ProjectTaskAssignment() {
     const token = localStorage.getItem('token');
     if (!token) return;
     const headers = { 'Authorization': `Bearer ${token}` };
-      axios.get(`http://localhost:8080/comments/view/${task.taskId}/${user.userId}`, {headers})
+      axios.get(API_ROUTES.PROJECTS.VIEW_COMMENTS(task.taskId,user.userId), {headers})
           .then(() => setUnreadMap(prev => ({...prev, [task.taskId]: false })))
           .catch(err => console.error("Failed to mark as read", err));
       setSelectedTaskForComments(task);

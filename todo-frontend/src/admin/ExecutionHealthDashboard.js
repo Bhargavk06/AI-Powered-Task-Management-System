@@ -19,7 +19,7 @@ const ExecutionHealthDashboard = () => {
       setError(null);
 
       // Get the backend URL from environment or use default
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8080';
+      const backendUrl = process.env.BASE_URL || 'http://localhost:8080';
       
       const endpoints = [
         `${backendUrl}/api/health/task-execution`,
@@ -113,7 +113,7 @@ const ExecutionHealthDashboard = () => {
           <p className="text-gray-600 text-sm mb-4">{error}</p>
           <div className="bg-gray-100 p-3 rounded text-left mb-4">
             <p className="text-xs text-gray-600 font-mono break-words">
-              Backend URL: {process.env.REACT_APP_BACKEND_URL || 'http://localhost:8080'}<br/>
+              Backend URL: {process.env.BASE_URL || 'http://localhost:8080'}<br/>
               Check browser console for details.
             </p>
           </div>

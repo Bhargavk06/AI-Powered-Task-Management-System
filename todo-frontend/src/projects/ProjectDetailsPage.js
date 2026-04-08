@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useParams, useNavigate, useLocation} from 'react-router-dom';
 import { ArrowLeft, Video, X } from 'react-feather'; // Added Video and X icons
 import { useAuth } from '../context/AuthContext';
+import { API_ROUTES } from '../api/apiRoutes';
 
 function ProjectDetailsPage() {
   const { projectId } = useParams();
@@ -40,7 +41,7 @@ function ProjectDetailsPage() {
     const headers = { 'Authorization': `Bearer ${token}` };
 
     setIsLoading(true);
-    axios.get(`http://localhost:8080/projects/${projectId}`, { headers })
+    axios.get(API_ROUTES.PROJECTS.GET_ONE(projectId), { headers })
       .then(response => {
         setProject(response.data);
         setAssignedUsers(response.data.assignedUsers || []);
@@ -56,7 +57,7 @@ function ProjectDetailsPage() {
       const headers = { 'Authorization': `Bearer ${token}` };
 
       // Pass projectId in the URL
-      const response = await axios.post(`http://localhost:8080/meeting/connect-google/${projectId}`, {}, { headers });
+      const response = await axios.post(API_ROUTES.PROJECTS.GOOGLE_MEET.CONNECT(projectId), {}, { headers });
 
       if (response.data === "Already Connected") {
         setIsModalOpen(true);
@@ -76,7 +77,7 @@ function ProjectDetailsPage() {
       const token = localStorage.getItem('token');
       const headers = { 'Authorization': `Bearer ${token}` };
 
-      const res = await axios.post(`http://localhost:8080/meeting/schedule/${projectId}`, meetingData, { headers });
+      const res = await axios.post(API_ROUTES.PROJECTS.GOOGLE_MEET.SCHEDULE(projectId), meetingData, { headers });
       
       alert(`Meeting created! Link: ${res.data}`);
       setIsModalOpen(false);

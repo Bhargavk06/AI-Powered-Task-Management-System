@@ -3,7 +3,6 @@ package com.example.todo;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name = "notifications")
@@ -15,8 +14,11 @@ public class Notifications {
 
     private String senderId;     
     private String receiverId;  
-    private String message;     
-    private boolean read = false; 
+    private String message;    
+    @Column(name = "is_read") 
+    private boolean isRead = false; 
+
+
     private LocalDateTime timestamp; 
 
     public Notifications() {
@@ -27,7 +29,7 @@ public class Notifications {
         this.senderId = senderId;
         this.receiverId = receiverId;
         this.message = message;
-        this.read = false;
+        this.isRead = false;
         this.timestamp = LocalDateTime.now();
     }
 
@@ -61,13 +63,12 @@ public class Notifications {
         this.message = message;
     }
     
-    @JsonProperty("isRead") 
     public boolean isRead() {
-        return read;
+        return isRead;
     }
 
-    public void setRead(boolean read) {
-        this.read = read;
+    public void setRead(boolean isRead) {
+        this.isRead = isRead;
     }
 
     public LocalDateTime getTimestamp() {

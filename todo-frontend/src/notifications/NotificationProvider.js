@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { API_ROUTES } from '../api/apiRoutes';
 
 const NotificationContext = createContext();
 
@@ -20,7 +21,7 @@ export const NotificationProvider = ({ children }) => {
     const token = localStorage.getItem('token');
     if (!token) return; 
     setIsLoading(true);
-    axios.get(`http://localhost:8080/api/notifications/user/${user.userId}`, {
+    axios.get(API_ROUTES.NOTIFICATIONS.GET_USER_NOTIFICATIONS(user.userId), {
         headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(response => {
@@ -42,7 +43,11 @@ export const NotificationProvider = ({ children }) => {
     const token = localStorage.getItem('token');
     if (!token) return Promise.reject("No token found");
 
-    return axios.post(`http://localhost:8080/api/notifications/mark-all-as-read/${user.userId}`, null, { // null is for the request body
+    setNotifications(prev =>
+      prev.map(n => ({ ...n, isRead: true }))
+    );
+
+    return axios.post(API_ROUTES.NOTIFICATIONS.MARK_ALL_AS_READ(user.userId), null, { // null is for the request body
         headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(() => {
@@ -62,7 +67,7 @@ export const NotificationProvider = ({ children }) => {
     const originalNotifications = notifications;
     setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n));
 
-    return axios.post(`http://localhost:8080/api/notifications/mark-as-read/${notificationId}`, null, {
+    return axios.post(API_ROUTES.NOTIFICATIONS.MARK_ONE_AS_READ(notificationId), null, {
         headers: { 'Authorization': `Bearer ${token}` }
     })
       .catch(error => {

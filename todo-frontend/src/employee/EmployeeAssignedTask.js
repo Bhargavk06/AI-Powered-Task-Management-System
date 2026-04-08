@@ -10,6 +10,8 @@ import AIWorkspace from './AIWorkspace';
 import { MessageSquare, Bell, X, Mail, CheckCircle } from 'react-feather'; 
 import { useNotifications } from '../notifications/NotificationProvider'; 
 
+import { API_ROUTES } from './api/apiRoutes';
+
 // Helper functions (keep these)
 const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
 const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
@@ -113,7 +115,7 @@ useEffect(() => {
         'Authorization': `Bearer ${token}`
       };
 
-      axios.get(`http://localhost:8080/assigntask/gettask/${userId}`, { headers })
+      axios.get(API_ROUTES.EMPLOYEE.GET_TASKS(userId), { headers })
         .then((response) => setTask(response.data))
         .catch((error) => console.log(error));
 

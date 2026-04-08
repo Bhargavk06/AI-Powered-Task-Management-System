@@ -36,7 +36,7 @@ public class NotificationService {
     
     @Transactional // Good practice for update operations
     public void markAllAsRead(String userId) {
-        List<Notifications> unreadNotifications = notificationRepository.findByReceiverIdAndReadFalse(userId);
+        List<Notifications> unreadNotifications = notificationRepository.findByReceiverIdAndIsReadFalse(userId);
         for (Notifications notification : unreadNotifications) {
             notification.setRead(true);
         }

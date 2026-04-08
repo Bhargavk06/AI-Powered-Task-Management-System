@@ -10,7 +10,9 @@ import {
 } from "react-feather";
 import { useAuth } from "../context/AuthContext";
 import SummaryPieChart from "./SummaryPieChart";
-
+import { API_ROUTES } from "../api/apiRoutes";
+import AddUserForm from "./AddUserForm";
+import BulkUploadModal from "./BulkUploadModal";
 const STATUS_COLORS = [
   "#38bdf8", // To Do
   "#f59e0b", // In Progress
@@ -33,13 +35,7 @@ const processSummaryData = (rawData) => {
   ];
 };
 
-const StatCard = ({
-  icon,
-  title,
-  value,
-  isLoading,
-  color = "emerald",
-}) => {
+const StatCard = ({ icon, title, value, isLoading, color = "emerald" }) => {
   const Icon = icon;
 
   const colorStyles = {
@@ -77,7 +73,9 @@ const StatCard = ({
             <div className="mt-3 h-10 w-24 bg-slate-200 rounded animate-pulse" />
           ) : (
             <>
-              <p className={`text-4xl font-bold mt-2 ${colorStyles[color].count}`}>
+              <p
+                className={`text-4xl font-bold mt-2 ${colorStyles[color].count}`}
+              >
                 {value}
               </p>
               <div className="flex items-center text-xs mt-2 text-emerald-500 font-medium">
@@ -100,6 +98,8 @@ const StatCard = ({
 
 function HomeSection() {
   const { user } = useAuth();
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
 
   const [stats, setStats] = useState({
     employeeCount: 0,
@@ -136,12 +136,12 @@ function HomeSection() {
           employeeSummaryRes,
           managerSummaryRes,
         ] = await Promise.all([
-          axios.get("http://localhost:8080/profile/employees", { headers }),
-          axios.get("http://localhost:8080/profile/managers", { headers }),
-          axios.get("http://localhost:8080/projects", { headers }),
-          axios.get("http://localhost:8080/assigntask/totalSummary", { headers }),
-          axios.get("http://localhost:8080/assigntask/totalEmployeeSummary", { headers }),
-          axios.get("http://localhost:8080/assigntask/totalManagerSummary", { headers }),
+          axios.get(API_ROUTES.ADMIN.GET_EMPLOYEE_PROFILES, { headers }),
+          axios.get(API_ROUTES.ADMIN.GET_MANAGER_PROFILES, { headers }),
+          axios.get(API_ROUTES.ADMIN.GET_PROJECTS, { headers }),
+          axios.get(API_ROUTES.ADMIN.TOTAL_SUMMARY, { headers }),
+          axios.get(API_ROUTES.ADMIN.TOTAL_EMPLOYEE_SUMMARY, { headers }),
+          axios.get(API_ROUTES.ADMIN.TOTAL_MANAGER_SUMMARY, { headers }),
         ]);
 
         setStats({
@@ -165,10 +165,36 @@ function HomeSection() {
     fetchDashboardData();
   }, []);
 
+  const handleBulkUpload = async (event) => {
+    const file = event.target.files[0];
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const token = localStorage.getItem("token");
+
+    try {
+      await axios.post(
+        "http://localhost:8080/admin/bulk-upload-users",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      alert("Users uploaded successfully");
+    } catch (err) {
+      console.error(err);
+      alert("Upload failed");
+    }
+  };
+
   return (
     <div className="w-full min-h-screen p-8 bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="max-w-7xl mx-auto space-y-10">
-
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
@@ -181,9 +207,28 @@ function HomeSection() {
           </div>
 
           <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg shadow hover:bg-emerald-700 transition">
-              <Plus size={16} /> Add Employee
+            <button
+              onClick={() => setShowAddUserModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg shadow hover:bg-emerald-700 transition"
+            >
+              <Plus size={16} /> Add User
             </button>
+
+            <input
+              type="file"
+              accept=".xlsx,.xls"
+              id="bulkUploadInput"
+              style={{ display: "none" }}
+              onChange={handleBulkUpload}
+            />
+
+            <button
+              onClick={() => setShowBulkModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg shadow hover:bg-emerald-700 transition"
+            >
+              <Plus size={16} /> Bulk Upload
+            </button>
+
             <button className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg shadow hover:bg-slate-900 transition">
               <Plus size={16} /> Create Project
             </button>
@@ -215,7 +260,7 @@ function HomeSection() {
           />
           <StatCard
             title="Completed Tasks"
-            value={summaryData.total.find(d => d.name === "Done")?.value || 0}
+            value={summaryData.total.find((d) => d.name === "Done")?.value || 0}
             icon={CheckSquare}
             isLoading={isLoading}
             color="violet"
@@ -284,6 +329,27 @@ function HomeSection() {
           </ul>
         </div>
 
+        {showAddUserModal && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+            <div className="bg-white p-6 rounded-lg w-96 relative">
+              <button
+                onClick={() => setShowAddUserModal(false)}
+                className="absolute top-2 right-3 text-gray-500"
+              >
+                ✕
+              </button>
+
+              <h2 className="text-xl font-bold mb-4">Add User</h2>
+
+              <AddUserForm onClose={() => setShowAddUserModal(false)} />
+            </div>
+          </div>
+        )}
+
+        <BulkUploadModal
+          isOpen={showBulkModal}
+          onClose={() => setShowBulkModal(false)}
+        />
       </div>
     </div>
   );

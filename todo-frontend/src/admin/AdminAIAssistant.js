@@ -12,6 +12,7 @@ import {
   Layers,
   Activity,
 } from "react-feather";
+import { API_ROUTES } from "../api/apiRoutes";
 
 const AdminAIAssistant = () => {
   const token = localStorage.getItem("token");
@@ -50,7 +51,7 @@ I can answer questions using your Task Management System database.`
 
     try {
       const response = await axios.post(
-        "http://localhost:8080/api/gemini/admin-assistant/ask",
+        API_ROUTES.ADMIN.GEMINI_QUERY,
         { question: finalText },
         { headers }
       );

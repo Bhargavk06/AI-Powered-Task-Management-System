@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import ChatWindow from '../ChatWindow'; 
 import { MessageSquare } from 'react-feather'; 
 import useConfirmationModal from '../components/useConfirmationModal';
+import { API_ROUTES } from '../api/apiRoutes';
 
 function ManagerTasks() {
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -54,7 +55,7 @@ function ManagerTasks() {
       };
     const userId=user.userId;
     if (userId) {
-      axios.get(`http://localhost:8080/assigntask/gettask/${userId}`, {headers})
+      axios.get(API_ROUTES.MANAGER.GET_TASKS(userId), {headers})
         .then((response) => setTasks(response.data))
         .catch((error) => console.log(error));
 
@@ -77,7 +78,7 @@ function ManagerTasks() {
         'Authorization': `Bearer ${token}`
     };
 
-    return axios.put(`http://localhost:8080/assigntask/updateStatus`, { 
+    return axios.put(API_ROUTES.MANAGER.UPDATE_STATUS, { 
         taskId, 
         status: newStatus 
     }, { headers })
@@ -120,7 +121,7 @@ function ManagerTasks() {
     const headers = { 'Authorization': `Bearer ${token}` };
 
     try {
-      await axios.get(`http://localhost:8080/comments/view/${task.taskId}/${user.userId}`, { headers });
+      await axios.get(API_ROUTES.MANAGER.VIEW_COMMENTS(task.taskId,user.userId), { headers });
       setUnreadMap((prev) => ({ ...prev, [task.taskId]: false }));
       setSelectedTaskForComments(task); 
     } catch (err) {
@@ -137,7 +138,7 @@ function ManagerTasks() {
         newPrompt: prompt,
         history: history 
     };
-    const res = await axios.post('http://localhost:8080/api/gemini/ask', payload, { headers });
+    const res = await axios.post(API_ROUTES.MANAGER.GEMINI_QUERY, payload, { headers });
     return res.data;
   };
 

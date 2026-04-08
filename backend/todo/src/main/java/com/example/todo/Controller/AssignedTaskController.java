@@ -16,7 +16,6 @@ import com.example.todo.dto.TaskDto;
 import com.example.todo.UserAuthentication;
 import com.example.todo.Repository.UserRepository;
 
-@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/assigntask")
 public class AssignedTaskController {

@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Archive } from 'react-feather';
 import ProjectCard from '../projects/ProjectCard'; // Make sure this path is correct
 import useConfirmationModal from '../components/useConfirmationModal'; // Import the hook
+import { API_ROUTES } from '../api/apiRoutes';
 
 function ProjectSection() {
   const [allProjects, setAllProjects] = useState([]);
@@ -22,7 +23,7 @@ function ProjectSection() {
     }
     const headers = { 'Authorization': `Bearer ${token}` };
     setIsLoading(true);
-    axios.get('http://localhost:8080/projects',{headers})
+    axios.get(API_ROUTES.PROJECTS.GET_ALL,{headers})
       .then(response => setAllProjects(response.data))
       .catch(error => console.error("Error fetching projects:", error))
       .finally(() => setIsLoading(false));
@@ -46,7 +47,7 @@ function ProjectSection() {
     }
     const headers = { 'Authorization': `Bearer ${token}` };
 
-    return axios.delete(`http://localhost:8080/projects/${projectId}`,{headers})
+    return axios.delete(API_ROUTES.PROJECTS.GET_ONE(projectId),{headers})
       .then(() => {
         setAllProjects(prevProjects => prevProjects.filter(p => p.id !== projectId));
       })

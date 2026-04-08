@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Plus, Trash2, Zap, User, Clock, AlertCircle, CheckCircle } from 'react-feather';
+import { API_ROUTES } from '../api/apiRoutes';
 
 const TaskAutomation = () => {
   // --- Auth Constants ---
@@ -30,8 +31,8 @@ const TaskAutomation = () => {
       try {
         // Fetch Users for the map
         const [emp, mgr] = await Promise.all([
-          axios.get('http://localhost:8080/profile/employees', { headers }),
-          axios.get('http://localhost:8080/profile/managers', { headers })
+          axios.get(API_ROUTES.ADMIN.GET_EMPLOYEE_PROFILES, { headers }),
+          axios.get(API_ROUTES.ADMIN.GET_MANAGER_PROFILES, { headers })
         ]);
         const all = [...emp.data, ...mgr.data].reduce((acc, u) => {
           acc[u.id] = u.username;
@@ -40,7 +41,7 @@ const TaskAutomation = () => {
         setUserMap(all);
 
         // FETCH PERSISTENT QUEUE: Get tasks already in UnassignedTask table
-        const queueRes = await axios.get(`http://localhost:8080/api/gemini/automation/get-queue?adminId=${adminId}`, { headers });
+        const queueRes = await axios.get(API_ROUTES.ADMIN.GET_TASKS_IN_QUEUE(adminId), { headers });
         // Map backend 'id' to our frontend 'id'
         const existingTasks = queueRes.data.map(t => ({
           id: t.id,
@@ -65,7 +66,7 @@ const TaskAutomation = () => {
     try {
       // SAVE TO UNASSIGNED_TASK TABLE
       const response = await axios.post(
-        `http://localhost:8080/api/gemini/automation/add-to-queue?adminId=${adminId}`,
+        API_ROUTES.ADMIN.ADD_TASKS_TO_QUEUE(adminId),
         currentTask,
         { headers }
       );
@@ -91,7 +92,7 @@ const TaskAutomation = () => {
   const removeFromQueue = async (id) => {
     try {
       // DELETE FROM UNASSIGNED_TASK TABLE
-      await axios.delete(`http://localhost:8080/api/gemini/automation/queue/${id}`, { headers });
+      await axios.delete(API_ROUTES.ADMIN.DELETE_FROM_QUEUE(id), { headers });
       setPendingTasks(pendingTasks.filter(t => t.id !== id));
     } catch (err) {
       alert("Failed to remove task from database.");
@@ -103,7 +104,7 @@ const TaskAutomation = () => {
     setIsLoading(true);
     try {
       const response = await axios.post(
-        'http://localhost:8080/api/gemini/automation/suggest-multi',
+       API_ROUTES.ADMIN.MULTITASK_SUGGESTIONS,
         { tasks: pendingTasks },
         { headers }
       );
@@ -119,7 +120,7 @@ const TaskAutomation = () => {
   const finalizeAssignment = async (task, employeeId) => {
     try {
       // This calls the method that saves to AssignedTask AND deletes from UnassignedTask
-      await axios.post('http://localhost:8080/api/gemini/automation/finalize-assign', {
+      await axios.post(API_ROUTES.ADMIN.FINALIZE_ASSIGNMENT, {
         tempId: task.id.toString(), // The ID in UnassignedTask table
         taskName: task.taskName,
         description: task.description,
@@ -136,7 +137,7 @@ const TaskAutomation = () => {
     }
   };
 
-  // ✅ NEW FEATURE: AI AUTO FILL TASK FROM NATURAL LANGUAGE
+  // NEW FEATURE: AI AUTO FILL TASK FROM NATURAL LANGUAGE
   const handleSmartParse = async () => {
     if (!smartText.trim()) {
       alert("Please enter a task sentence.");
@@ -147,7 +148,7 @@ const TaskAutomation = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:8080/api/gemini/automation/parse-task",
+        API_ROUTES.ADMIN.AI_AUTOFILL_TASK_DETAILS,
         { text: smartText },
         { headers }
       );
