@@ -21,7 +21,6 @@ public class JWTUtil {
     public String generateToken(String userId,String username, String userRole) {
         return Jwts.builder()
                 .setSubject(userId)
-                // ✅ FIX: Add the role as a custom claim. This is the critical fix.
                 .claim("role", userRole) 
                 .claim("username", username) 
                 .setIssuedAt(new Date(System.currentTimeMillis()))
@@ -45,7 +44,7 @@ public class JWTUtil {
         return extractClaim(token, Claims::getSubject);
     }
     
-    // ✅ NEW: Extract the role from our custom claim
+    // Extract the role from our custom claim
     public String extractRole(String token) {
         return extractClaim(token, claims -> claims.get("role", String.class));
     }

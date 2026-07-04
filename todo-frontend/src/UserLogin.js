@@ -41,7 +41,7 @@ function UserAuthPage() {
     setError('');
   if (isLogin) {
       try {
-        const response = await axios.post('http://10.244.3.142:8080/user/login', {
+        const response = await axios.post(API_ROUTES.LOGIN, {
           userId: userId, 
           password: password
         });

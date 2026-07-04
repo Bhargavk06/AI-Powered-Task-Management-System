@@ -2,7 +2,7 @@ const BASE_URL =  process.env.REACT_APP_API_BASE_URL
 console.log(BASE_URL);
 console.log(process.env);
 export const API_ROUTES = {    
-    LOGIN: "/user/login",
+    LOGIN: `${BASE_URL}/user/login`,
     REGISTER: `${BASE_URL}/user/register`,
     GET_USERS: "/user/all",
     UNREAD_COMMENTS:`${BASE_URL}/comments/unread-map`,
