@@ -4,11 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import useConfirmationModal from '../components/useConfirmationModal';
 import { Search, Trash2, FileText, Download } from 'react-feather';
 import { API_ROUTES } from '../api/apiRoutes';
-
+import { useToast } from '../styles/ToastContent';
 function EmployeeSection() {
   const [searchTerm, setSearchTerm] = useState('');
   const [allEmployees, setAllEmployees] = useState([]);
   const [downloadingId, setDownloadingId] = useState(null);
+
+  const {showToast} = useToast();
 
   const navigate = useNavigate();
 
@@ -60,10 +62,12 @@ function EmployeeSection() {
     return axios.delete(API_ROUTES.ADMIN.DELETE_AN_USER(employeeId), { headers })
       .then(() => {
         setAllEmployees(prev => prev.filter(emp => emp.id !== employeeId));
-      })
+        showToast("Employee deleted successfully","success");
+      }
+    )
       .catch(error => {
         console.error("Delete failed:", error);
-        alert("Failed to delete employee");
+        showToast("Failed to delete employee","error");
         throw error;
       });
   };
@@ -78,7 +82,7 @@ function EmployeeSection() {
   const generateEmployeeReport = async (employeeId, employeeName) => {
     const token = localStorage.getItem('token');
     if (!token) {
-      alert("Authentication Error: No token found.");
+      showToast("Authentication Error: No token found.");
       return;
     }
 

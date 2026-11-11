@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { User, Lock, Mail, Phone, Briefcase } from "react-feather";
+import { useToast } from "../styles/ToastContent";
 import { API_ROUTES } from "../api/apiRoutes";
 
 function AddUserForm({ onClose }) {
+  const {showToast} = useToast();
 
   const [userId, setUserId] = useState("");
   const [username, setUsername] = useState("");
@@ -25,12 +27,12 @@ function AddUserForm({ onClose }) {
         profile: { email, phone },
       });
 
-      alert("User added successfully");
+      showToast("User added successfully","success");
       onClose();
 
     } catch (err) {
       console.error(err);
-      alert("Error adding employee");
+      showToast("Error adding employee","error");
     }
   };
 

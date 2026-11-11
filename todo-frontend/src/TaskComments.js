@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import Icon from './components/AppIcon'; // Assuming you have an Icon component
+import Icon from './components/AppIcon';
+import { useToast } from './styles/ToastContent';
+import { API_ROUTES } from './api/apiRoutes';
 
-function TaskComments({ task, userId, onClose }) { // Corrected props
+function TaskComments({ task, userId, onClose }) { 
+  const { showToast } = useToast();
   const [comments, setComments] = useState([]);
   const [sendComment, setSendComment] = useState('');
   const taskId = task?.taskId; // Safely get taskId from the task object
@@ -16,11 +19,11 @@ function TaskComments({ task, userId, onClose }) { // Corrected props
   const fetchComments = () => {
     const token = localStorage.getItem('token');
     if (!token) {
-        alert("Authentication Error: Please log in again.");
+        showToast("Authentication Error: Please log in again.","error");
         return Promise.reject("No token found");
     }
     const headers = { 'Authorization': `Bearer ${token}` };
-    axios.get(`http://localhost:8080/comments/view/${taskId}/${userId}`, {headers})
+    axios.get(API_ROUTES.EMPLOYEE.VIEW_COMMENTS(taskId,userId), {headers})
       .then((response) => {
          console.log("Fetched comments:", response.data);
         setComments(response.data);
@@ -33,7 +36,7 @@ function TaskComments({ task, userId, onClose }) { // Corrected props
   const handleComment = () => {
     const token = localStorage.getItem('token');
     if (!token) {
-        alert("Authentication Error: Please log in again.");
+      showToast("Authentication Error: Please log in again.","error");
         return Promise.reject("No token found");
     }
     const headers = { 'Authorization': `Bearer ${token}` };
@@ -42,12 +45,12 @@ function TaskComments({ task, userId, onClose }) { // Corrected props
 
     const newComment = {
       taskId,
-      userId, // *** Add this line ***
+      userId,
       content: sendComment,
       timestamp: new Date().toISOString()
     };
 
-    axios.post(`http://localhost:8080/comments/add`, newComment, {headers})
+    axios.post(API_ROUTES.ADD_COMMENT, newComment, {headers})
       .then(() => {
         setSendComment("");
         fetchComments(); // Refresh comments after sending

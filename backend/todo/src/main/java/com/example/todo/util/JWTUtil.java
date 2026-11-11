@@ -21,6 +21,7 @@ public class JWTUtil {
     public String generateToken(String userId,String username, String userRole) {
         return Jwts.builder()
                 .setSubject(userId)
+                //Add the role as a custom claim. This is the critical fix.
                 .claim("role", userRole) 
                 .claim("username", username) 
                 .setIssuedAt(new Date(System.currentTimeMillis()))

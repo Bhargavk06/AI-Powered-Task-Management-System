@@ -9,7 +9,7 @@ import { X, Type, AlignLeft, Calendar, Plus, ArrowLeft } from 'react-feather';
 import useConfirmationModal from '../components/useConfirmationModal'; // Adjust path if needed
 import { useAuth } from '../context/AuthContext';
 import { API_ROUTES } from '../api/apiRoutes';
-
+import { useToast } from '../styles/ToastContent';
 // Helper functions (keep these)
 const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
 const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
@@ -58,6 +58,8 @@ function AssignTask() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
+  const {showToast} = useToast();
+
 
   const [selectedTask, setSelectedTask] = useState(null); //  Track selected task for viewing comments
 
@@ -71,7 +73,7 @@ function AssignTask() {
   const fetchData = () => {
     const token = localStorage.getItem('token');
     if (!token) {
-      alert("Authentication Error: Please log in again.");
+      showToast("Authentication Error: Please log in again.","error");
       return Promise.reject("No token found");
     }
     const headers = { 'Authorization': `Bearer ${token}` };
@@ -92,7 +94,7 @@ function AssignTask() {
     }
     const token = localStorage.getItem('token');
     if (!token) {
-      alert("Authentication Error: Please log in again.");
+      showToast("Authentication Error: Please log in again.","error");
       return Promise.reject("No token found");
     }
     const headers = { 'Authorization': `Bearer ${token}` };
@@ -122,7 +124,7 @@ function AssignTask() {
   const handleAssign = (e) => {
     const token = localStorage.getItem('token');
     if (!token) {
-      alert("Authentication Error: Please log in again.");
+      showToast("Authentication Error: Please log in again.","error");
       return Promise.reject("No token found");
     }
     const headers = { 'Authorization': `Bearer ${token}` };
@@ -136,7 +138,7 @@ function AssignTask() {
       })
       .catch((error) => {
         console.error("Error assigning task:", error);
-        alert("Failed to assign task.");
+        showToast("Failed to assign task","error");
         // It's good practice to not close the form on error so the user can retry
       });
   };
@@ -144,7 +146,7 @@ function AssignTask() {
   const handleUpdate = (e) => {
     const token = localStorage.getItem('token');
     if (!token) {
-      alert("Authentication Error: Please log in again.");
+      showToast("Authentication Error: Please log in again.","error");
       return Promise.reject("No token found");
     }
     const headers = { 'Authorization': `Bearer ${token}` };
@@ -160,9 +162,9 @@ function AssignTask() {
       .catch((error) => {
         console.error("Error updating task:", error);
         if (error.response && error.response.data) {
-          alert(`Failed to update task: ${error.response.data.message || 'Check console for details.'}`);
+          showToast(`Failed to update task: ${error.response.data.message || 'Check console for details.'}`,"error");
         } else {
-          alert("Failed to update task. See the console for more details.");
+          showToast("Failed to update task.","error");
         }
       });
   };
@@ -170,7 +172,7 @@ function AssignTask() {
   const handleStatusChange = async (taskId, newStatus) => {
     const token = localStorage.getItem('token');
     if (!token) {
-      alert("Authentication Error: Please log in again.");
+      showToast("Authentication Error: Please log in again.","error");
       return Promise.reject("No token found");
     }
     const headers = { 'Authorization': `Bearer ${token}` };
@@ -196,7 +198,7 @@ function AssignTask() {
   const deleteTaskAction = (taskId) => {
     const token = localStorage.getItem('token');
     if (!token) {
-      alert("Authentication Error: Please log in again.");
+      showToast("Authentication Error: Please log in again.","error");
       return Promise.reject("No token found");
     }
     const headers = { 'Authorization': `Bearer ${token}` };
@@ -207,7 +209,7 @@ function AssignTask() {
       })
       .catch((error) => {
         console.error("Error deleting the task:", error);
-        alert("Failed to delete the task."); 
+        showToast("Failed to delete the task.","error"); 
         throw error; 
       });
   };
@@ -250,7 +252,7 @@ function AssignTask() {
   const openCommentsModal = async (t) => {
     const token = localStorage.getItem('token');
     if (!token) {
-      alert("Authentication Error: Please log in again.");
+      showToast("Authentication Error: Please log in again.","error");
       return Promise.reject("No token found");
     }
     const headers = { 'Authorization': `Bearer ${token}` };

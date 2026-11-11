@@ -10,7 +10,7 @@ import AIWorkspace from './AIWorkspace';
 import { MessageSquare, Bell, X, Mail, CheckCircle } from 'react-feather'; 
 import { useNotifications } from './notifications/NotificationProvider'; 
 import KanbanMiniCard from './KanbanMiniCard';
-
+import { useToast } from './styles/ToastContent';
 import { API_ROUTES } from './api/apiRoutes';
 
 // Helper functions (keep these)
@@ -98,6 +98,8 @@ function EmployeeTodo() {
   const [selectedKanbanTask, setSelectedKanbanTask] = useState(null);
   const [viewingTaskDetails, setViewingTaskDetails] = useState(null);
 
+  const showToast=useToast();
+
 console.log('--- EmployeeTodo is rendering. User from context is:', user);
 
 useEffect(() => {
@@ -132,7 +134,7 @@ useEffect(() => {
   const handleStatusChange = async (taskId, newStatus) => {
     const token = localStorage.getItem('token');
     if (!token) {
-        alert("Authentication Error: Please log in again.");
+      showToast("Authentication Error: Please log in again.","error");
         return Promise.reject("No token found");
     }
     const headers = { 'Authorization': `Bearer ${token}` };
@@ -153,7 +155,7 @@ useEffect(() => {
   const openCommentsModal = async (t) => {
     const token = localStorage.getItem('token');
     if (!token) {
-        alert("Authentication Error: Please log in again.");
+      showToast("Authentication Error: Please log in again.","error");
         return Promise.reject("No token found");
     }
     const headers = { 'Authorization': `Bearer ${token}` };
@@ -178,7 +180,7 @@ useEffect(() => {
     };
     const token = localStorage.getItem('token');
     if (!token) {
-        alert("Authentication Error: Please log in again.");
+      showToast("Authentication Error: Please log in again.","error");
         return Promise.reject("No token found");
     }
     const headers = { 'Authorization': `Bearer ${token}` };

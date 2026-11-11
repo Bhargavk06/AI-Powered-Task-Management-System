@@ -8,6 +8,7 @@ import './styles/tailwind.css';
 // CONTEXT PROVIDERS
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './notifications/NotificationProvider';
+import { ToastProvider } from './styles/ToastContent';
 import ThemeProvider from './ThemeContext';
 
 // GENERAL PAGES
@@ -49,6 +50,7 @@ function App() {
       <AuthProvider>
         <ThemeProvider>
            <NotificationProvider>
+            <ToastProvider>
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<UserLogin />} />
@@ -91,6 +93,7 @@ function App() {
               </Route>
 
             </Routes>
+            </ToastProvider>
             </NotificationProvider>
         </ThemeProvider>
       </AuthProvider>

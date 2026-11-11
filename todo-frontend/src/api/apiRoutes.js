@@ -6,6 +6,7 @@ export const API_ROUTES = {
     REGISTER: `${BASE_URL}/user/register`,
     GET_USERS: "/user/all",
     UNREAD_COMMENTS:`${BASE_URL}/comments/unread-map`,
+    ADD_COMMENT: `${BASE_URL}/comments/add`,
 
     EMPLOYEE:{
         GET_TASKS:(userId)=> `${BASE_URL}/assigntask/gettask/${userId}`,
